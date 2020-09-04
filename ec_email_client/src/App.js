@@ -12,6 +12,16 @@ function App() {
     var DISCOVERY_DOCS = [
         "https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
     ];
+
+    // Authorization scopes required by the API; multiple scopes can be
+    // included, separated by spaces.
+    var SCOPES = "https://www.googleapis.com/auth/gmail.readonly";
+
+    function handleClientLoad() {
+        console.log("About to loadwindow.gapi");
+        window.gapi.load("client:auth2", initClient);
+    }
+
     function initClient() {
         var authorizeButton = document.getElementById("authorize_button");
         var signoutButton = document.getElementById("signout_button");
@@ -37,7 +47,9 @@ function App() {
                     signoutButton.onclick = handleSignoutClick;
                 },
                 function (error) {
-                    appendPre(JSON.stringify(error, null, 2));
+                    console.log(
+                        "INIT CLIENT ERROR: " + JSON.stringify(error, null, 2)
+                    );
                 }
             );
     }
@@ -50,70 +62,27 @@ function App() {
         window.gapi.auth2.getAuthInstance().signOut();
     }
 
-    function updateSigninStatus(isSignedIn) {
+    async function updateSigninStatus(isSignedIn) {
         var authorizeButton = document.getElementById("authorize_button");
         var signoutButton = document.getElementById("signout_button");
         console.log("Sign in status: " + isSignedIn);
         if (isSignedIn) {
+            console.log("Profile Info: ", await getProfileInfo("me"));
             authorizeButton.style.display = "none";
             signoutButton.style.display = "block";
-            listLabels();
         } else {
             authorizeButton.style.display = "block";
             signoutButton.style.display = "none";
         }
     }
 
-    function listMessages() {
-        console.log("Getting messages");
-
-        window.gapi.client.gmail.users.messages
-            .list({
-                userId: "me",
-            })
-            .then(function (response) {
-                // var labels = response.result.labels;
-                console.log(response);
-                listMessage(response.result.messages[1].id);
-            });
-    }
-    function appendHTML(content) {
-        var pre = document.getElementById("content");
-        var textContent = document.createElement("div");
-        textContent.innerHTML = content;
-        pre.appendChild(textContent);
-    }
-
     function decodeBase64(data) {
-        console.log("Decoding: " + data);
-        return atob(decode(data));
-    }
-    function listLabels() {
-        console.log("Getting labels");
-
-        window.gapi.client.gmail.users.labels
-            .list({
-                userId: "me",
-            })
-            .then(function (response) {
-                var labels = response.result.labels;
-                appendPre("Labels:");
-
-                if (labels && labels.length > 0) {
-                    for (var i = 0; i < labels.length; i++) {
-                        var label = labels[i];
-                        appendPre(label.name);
-                    }
-                } else {
-                    appendPre("No Labels found.");
-                }
-                listMessages();
-            });
+        return atob(data);
     }
 
-    var decode = function (input) {
+    function decodeBase64HTML(data) {
         // Replace non-url compatible chars with base64 standard chars
-        input = input.replace(/-/g, "+").replace(/_/g, "/");
+        let input = data.replace(/-/g, "+").replace(/_/g, "/");
 
         // Pad out with standard base64 required padding characters
         var pad = input.length % 4;
@@ -126,43 +95,63 @@ function App() {
             input += new Array(5 - pad).join("=");
         }
 
-        return input;
-    };
+        return decodeBase64(input);
+    }
 
-    function listMessage(messageId) {
+    async function listMessagesIds(userId) {
+        // To get userId of logged in user, give "me"
+        if (userId == undefined) userId = "me";
+
+        return new Promise((resolve, reject) => {
+            window.gapi.client.gmail.users.messages
+                .list({
+                    userId: userId,
+                })
+                .then(function (response) {
+                    resolve(response.result.messages);
+                });
+        });
+    }
+
+    async function listMessage(messageId) {
         // https://developers.google.com/gmail/api/reference/rest/v1/users.messages.attachments#MessagePartBody
         console.log("Getting specific message for " + messageId);
 
-        window.gapi.client.gmail.users.messages
-            .get({
-                userId: "me",
-                id: messageId,
-            })
-            .then(function (response) {
-                // var labels = response.result.labels;
-                console.log(response.result);
-                appendHTML(
-                    decodeBase64(response.result.payload.parts[1].body.data)
-                );
-            });
+        return new Promise((resolve, reject) => {
+            window.gapi.client.gmail.users.messages
+                .get({
+                    userId: "me",
+                    id: messageId,
+                })
+                .then(function (response) {
+                    console.log(response.result);
+                    resolve(
+                        decodeBase64HTML(
+                            response.result.payload.parts[1].body.data
+                        )
+                    );
+                });
+        });
     }
 
-    function appendPre(message) {
-        var pre = document.getElementById("content");
-        var textContent = document.createTextNode(message + "\n");
-        pre.appendChild(textContent);
-    }
+    async function getProfileInfo(userId) {
+        // To get userId of logged in user, give "me"
+        if (userId == undefined) userId = "me";
 
-    // Authorization scopes required by the API; multiple scopes can be
-    // included, separated by spaces.
-    var SCOPES = "https://www.googleapis.com/auth/gmail.readonly";
-
-    function handleClientLoad() {
-        console.log("About to loadwindow.gapi");
-        window.gapi.load("client:auth2", initClient);
+        return new Promise((resolve, reject) => {
+            window.gapi.client.gmail.users
+                .getProfile({
+                    userId: userId,
+                })
+                .then((response) => {
+                    resolve(response.result);
+                });
+        });
     }
 
     const [gapiIsLoaded, setGapiIsLoaded] = useState(false);
+
+    // Process: handleClientLoad -> initClient -> updateSigninStatus
 
     useEffect(() => {
         const script = document.createElement("script");
@@ -182,7 +171,7 @@ function App() {
     useEffect(() => {
         setTimeout(() => {
             handleClientLoad();
-        }, 2000);
+        }, 1000);
     }, [gapiIsLoaded]);
 
     return (
