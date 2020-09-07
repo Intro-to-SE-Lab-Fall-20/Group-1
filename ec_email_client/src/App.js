@@ -176,9 +176,12 @@ function App() {
 
     return (
         <div className="App">
-            <button id="authorize_button" style={{ display: "none" }}>
-                Authorize
-            </button>
+            <div className="Title">EC Email Client</div>
+            <div className="GoogleSigninButton">
+                <button className="GoogleSigninButton" id="authorize_button" style={{ display: "none", border: "none", color: "transparent", background: "transparent", textAlign: "center" }}>
+                    <img style={{ cursor: "pointer" }} src="https://raw.githubusercontent.com/react-native-community/google-signin/master/img/signin-button.png?sanitize=false" />
+                </button>
+            </div>
             <button id="signout_button" style={{ display: "none" }}>
                 Sign Out
             </button>
