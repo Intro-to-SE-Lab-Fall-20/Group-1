@@ -2,6 +2,18 @@
   text-align: center;
 }
 
+.Title {
+  font-weight: bold;
+  font-size: 64px;
+}
+
+.GoogleSigninButton {
+  text-align: center;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;
