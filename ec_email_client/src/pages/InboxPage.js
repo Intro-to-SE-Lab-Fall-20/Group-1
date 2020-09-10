@@ -7,18 +7,40 @@ function InboxPage(props) {
     function checkIfSignedIn() {
         // Loads/signs in if not loaded
         if (!window.gapi) {
+            console.log("INBOX - GAPI was not loaded...loading now");
             const script = document.createElement("script");
             script.src = "https://apis.google.com/js/api.js";
             script.async = true;
             document.body.appendChild(script);
             document.body.removeChild(script);
 
+            // Sets up gapi, assigns signout button function
             setTimeout(() => {
                 window.gapi.load("client:auth2", initClient);
+                signOutButtonHandler();
             }, 1000);
+
+            // If not signed in, go to login page
         } else if (!window.gapi.auth2.getAuthInstance().isSignedIn.get()) {
+            console.log("INBOX - GAPI was loaded but not signed in");
             props.history.push("/");
         }
+
+        // If button doesn't have funciton, give it logout handler
+        if (document.getElementById("signout_button").onclick == undefined) {
+            signOutButtonHandler();
+        }
+    }
+
+    // Assings signout button logout functionality
+    function signOutButtonHandler() {
+        document.getElementById("signout_button").onclick = () => {
+            window.gapi.auth2.getAuthInstance().signOut();
+            console.log("INBOX - Signing out via button");
+            setTimeout(() => {
+                props.history.push("/");
+            }, 500);
+        };
     }
 
     function initClient() {
@@ -122,7 +144,12 @@ function InboxPage(props) {
         });
     }
 
-    return <div className="Title">Inbox Page</div>;
+    return (
+        <>
+            <div className="Title">Inbox Page</div>
+            <button id="signout_button">Sign Out</button>
+        </>
+    );
 }
 
 export default withRouter(InboxPage);

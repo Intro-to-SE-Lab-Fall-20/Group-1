@@ -46,10 +46,7 @@ function App() {
                         <InboxPage />
                     </Route>
                     <Route path="/">
-                        <LoginPage
-                            signInCallbacks={[logProfileInfo]}
-                            signOutCallbacks={[logSignOut]}
-                        />
+                        <LoginPage signInCallbacks={[]} signOutCallbacks={[]} />
                     </Route>
                 </Switch>
             </Router>
