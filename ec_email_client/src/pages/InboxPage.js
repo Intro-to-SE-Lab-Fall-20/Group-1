@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { withRouter } from "react-router";
+import "./InboxPage.css";
 
 // TODO: implement a check to see if GAPI is loaded & signed in, if not, then load and sign in
 
