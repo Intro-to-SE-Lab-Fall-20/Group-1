@@ -90,28 +90,123 @@ function App() {
         }
     }
 
-    function decodeBase64(data) {
-        return atob(data);
+    async function getProfileInfo(userId) {
+        // To get userId of logged in user, give "me"
+        if (userId === undefined) userId = "me";
+
+        return new Promise((resolve, reject) => {
+            window.gapi.client.gmail.users
+                .getProfile({
+                    userId: userId,
+                })
+                .then((response) => {
+                    resolve(response.result);
+                });
+        });
     }
 
-    function decodeBase64HTML(data) {
-        // Replace non-url compatible chars with base64 standard chars
-        let input = data.replace(/-/g, "+").replace(/_/g, "/");
+    function createMessage(
+        fromName,
+        fromEmail,
+        toName,
+        toEmail,
+        subject,
+        messageContent
+    ) {
+        // https://developers.google.com/gmail/api/reference/rest/v1/users.messages#Message
+        // https://whatismyipaddress.com/email-header
+        // Look at this sample: https://github.com/googleapis/google-api-nodejs-client/blob/master/samples/gmail/send.js
+        // Fix https://stackoverflow.com/questions/30590988/failed-sending-mail-through-google-api-with-javascript
 
-        // Pad out with standard base64 required padding characters
-        var pad = input.length % 4;
-        if (pad) {
-            if (pad === 1) {
-                throw new Error(
-                    "InvalidLengthError: Input base64url string is the wrong length to determine padding"
-                );
-            }
-            input += new Array(5 - pad).join("=");
-        }
+        const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString(
+            "base64"
+        )}?=`;
+        const messageParts = [
+            `From: ${fromName} <${fromEmail}>`,
+            `To: ${toName} <${toEmail}>`,
+            "Content-Type: text/html; charset=utf-8",
+            "MIME-Version: 1.0",
+            `Subject: ${utf8Subject}`,
+            "",
+            messageContent,
+        ];
+        const message = messageParts.join("\n");
 
-        return decodeBase64(input);
+        // The body needs to be base64url encoded.
+        const encodedMessage = Buffer.from(message)
+            .toString("base64")
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/, "");
+
+        return encodedMessage;
     }
 
+    async function sendMessage(encodedMessage) {
+        // Look at this sample: https://github.com/googleapis/google-api-nodejs-client/blob/master/samples/gmail/send.js
+        // Fix https://stackoverflow.com/questions/30590988/failed-sending-mail-through-google-api-with-javascript
+
+        window.gapi.client.gmail.users.messages
+            .send({
+                userId: "me",
+                resource: {
+                    raw: encodedMessage,
+                },
+            })
+            .then((result) => {
+                console.log(result);
+            });
+    }
+
+    // Process: handleClientLoad -> initClient -> updateSigninStatus
+
+    useEffect(() => {
+        const script = document.createElement("script");
+        script.src = "https://apis.google.com/js/api.js";
+        script.async = true;
+        document.body.appendChild(script);
+
+        // Handles Auth after load
+        setTimeout(() => {
+            handleClientLoad();
+        }, 1000);
+
+        return () => {
+            document.body.removeChild(script);
+        };
+    }, []);
+
+    return (
+        <div className="App">
+            <div className="Title">EC Email Client</div>
+            <div className="GoogleSigninButton">
+                <button
+                    className="GoogleSigninButton"
+                    id="authorize_button"
+                    style={{
+                        display: "none",
+                        border: "none",
+                        color: "transparent",
+                        background: "transparent",
+                        textAlign: "center",
+                    }}
+                >
+                    <img
+                        style={{ cursor: "pointer" }}
+                        src="https://raw.githubusercontent.com/react-native-community/google-signin/master/img/signin-button.png?sanitize=false"
+                    />
+                </button>
+            </div>
+            <button id="signout_button" style={{ display: "none" }}>
+                Sign Out
+            </button>
+            <pre id="content" style={{ "white-space": "pre-wrap" }}></pre>
+            <InboxPage />
+        </div>
+    );
+}
+
+function InboxPage(props) {
     async function getMessagesIds(userId) {
         // To get userId of logged in user, give "me"
         if (userId === undefined) userId = "me";
@@ -195,58 +290,6 @@ function App() {
         });
     }
 
-    async function getProfileInfo(userId) {
-        // To get userId of logged in user, give "me"
-        if (userId === undefined) userId = "me";
-
-        return new Promise((resolve, reject) => {
-            window.gapi.client.gmail.users
-                .getProfile({
-                    userId: userId,
-                })
-                .then((response) => {
-                    resolve(response.result);
-                });
-        });
-    }
-
-    function createMessage(
-        fromName,
-        fromEmail,
-        toName,
-        toEmail,
-        subject,
-        messageContent
-    ) {
-        // https://developers.google.com/gmail/api/reference/rest/v1/users.messages#Message
-        // https://whatismyipaddress.com/email-header
-        // Look at this sample: https://github.com/googleapis/google-api-nodejs-client/blob/master/samples/gmail/send.js
-        // Fix https://stackoverflow.com/questions/30590988/failed-sending-mail-through-google-api-with-javascript
-
-        const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString(
-            "base64"
-        )}?=`;
-        const messageParts = [
-            `From: ${fromName} <${fromEmail}>`,
-            `To: ${toName} <${toEmail}>`,
-            "Content-Type: text/html; charset=utf-8",
-            "MIME-Version: 1.0",
-            `Subject: ${utf8Subject}`,
-            "",
-            messageContent,
-        ];
-        const message = messageParts.join("\n");
-
-        // The body needs to be base64url encoded.
-        const encodedMessage = Buffer.from(message)
-            .toString("base64")
-            .replace(/\+/g, "-")
-            .replace(/\//g, "_")
-            .replace(/=+$/, "");
-
-        return encodedMessage;
-    }
-
     async function getAllMessages(userId) {
         // To get userId of logged in user, give "me"
         if (userId === undefined) userId = "me";
@@ -265,66 +308,44 @@ function App() {
         return messages;
     }
 
-    async function sendMessage(encodedMessage) {
-        // Look at this sample: https://github.com/googleapis/google-api-nodejs-client/blob/master/samples/gmail/send.js
-        // Fix https://stackoverflow.com/questions/30590988/failed-sending-mail-through-google-api-with-javascript
-
-        window.gapi.client.gmail.users.messages
-            .send({
-                userId: "me",
-                resource: {
-                    raw: encodedMessage,
-                },
-            })
-            .then((result) => {
-                console.log(result);
-            });
+    function decodeBase64(data) {
+        return atob(data);
     }
 
-    // Process: handleClientLoad -> initClient -> updateSigninStatus
+    function decodeBase64HTML(data) {
+        // Replace non-url compatible chars with base64 standard chars
+        let input = data.replace(/-/g, "+").replace(/_/g, "/");
 
-    useEffect(() => {
-        const script = document.createElement("script");
-        script.src = "https://apis.google.com/js/api.js";
-        script.async = true;
-        document.body.appendChild(script);
+        // Pad out with standard base64 required padding characters
+        var pad = input.length % 4;
+        if (pad) {
+            if (pad === 1) {
+                throw new Error(
+                    "InvalidLengthError: Input base64url string is the wrong length to determine padding"
+                );
+            }
+            input += new Array(5 - pad).join("=");
+        }
 
-        // Handles Auth after load
-        setTimeout(() => {
-            handleClientLoad();
-        }, 1000);
+        return decodeBase64(input);
+    }
 
-        return () => {
-            document.body.removeChild(script);
-        };
-    }, []);
+    const [emails, setEmails] = useState([]);
 
     return (
-        <div className="App">
-            <div className="Title">EC Email Client</div>
-            <div className="GoogleSigninButton">
-                <button
-                    className="GoogleSigninButton"
-                    id="authorize_button"
-                    style={{
-                        display: "none",
-                        border: "none",
-                        color: "transparent",
-                        background: "transparent",
-                        textAlign: "center",
-                    }}
-                >
-                    <img
-                        style={{ cursor: "pointer" }}
-                        src="https://raw.githubusercontent.com/react-native-community/google-signin/master/img/signin-button.png?sanitize=false"
-                    />
-                </button>
-            </div>
-            <button id="signout_button" style={{ display: "none" }}>
-                Sign Out
-            </button>
-            <pre id="content" style={{ "white-space": "pre-wrap" }}></pre>
-        </div>
+        <table>
+            <InboxEmailLine />
+        </table>
+    );
+}
+
+function InboxEmailLine(props) {
+    return (
+        <tr>
+            <td>FromName</td>
+            <td>Subject - </td>
+            <td>Snippet of Message</td>
+        </tr>
     );
 }
 
