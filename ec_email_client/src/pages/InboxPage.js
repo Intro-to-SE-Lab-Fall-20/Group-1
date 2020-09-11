@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
 import "./InboxPage.css";
+import {
+    Table,
+    Button,
+    Modal,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+} from "reactstrap";
 
 function InboxPage(props) {
     async function getMessagesIds(userId) {
@@ -22,13 +30,13 @@ function InboxPage(props) {
         // console.log("Getting specific message for " + messageId);
 
         let message = {
-            bodyHTML: null,
-            bodyText: null,
-            from: null,
-            to: null,
-            subject: null,
+            bodyHTML: "null",
+            bodyText: "null",
+            from: "null",
+            to: "null",
+            subject: "null",
             headers: {},
-            id: null,
+            id: "null",
         };
 
         return new Promise((resolve, reject) => {
@@ -112,6 +120,9 @@ function InboxPage(props) {
 
     function decodeBase64HTML(data) {
         // Replace non-url compatible chars with base64 standard chars
+        if (data == undefined) {
+            return "";
+        }
         let input = data.replace(/-/g, "+").replace(/_/g, "/");
 
         // Pad out with standard base64 required padding characters
@@ -137,7 +148,7 @@ function InboxPage(props) {
     }, []);
 
     return (
-        <table>
+        <Table>
             <thead>
                 <tr>
                     <td>
@@ -150,36 +161,71 @@ function InboxPage(props) {
                         <b>Message</b>
                     </td>
                 </tr>
-                <tr>
-                    <td colSpan="3">
-                        <b>
-                            <hr />
-                        </b>
-                    </td>
-                </tr>
             </thead>
             <tbody>
                 {emails.map((email) => {
-                    return <InboxEmailLine key={email.id} message={email} />;
+                    return <InboxEmailRow key={email.id} message={email} />;
                 })}
             </tbody>
-        </table>
+        </Table>
     );
 }
 
-function InboxEmailLine(props) {
+function InboxEmailRow(props) {
     function tellEmailIdOnClick() {
         console.log("Email ID Clicked: " + props.message.id);
+        toggleModalOpen();
+    }
+
+    const [modalIsOpen, setModalIsOpen] = useState(false);
+    function toggleModalOpen() {
+        setModalIsOpen(!modalIsOpen);
     }
 
     return (
-        <tr onClick={tellEmailIdOnClick}>
-            <td>{props.message.from.split(" <")[0]}</td>
-            <td>
-                <b>{props.message.subject.substring(0, 30)}</b>
-            </td>
-            <td>{props.message.bodyText.substring(0, 100)}</td>
-        </tr>
+        <>
+            <tr onClick={tellEmailIdOnClick}>
+                <td>{props.message.from.split(" <")[0]}</td>
+                <td>
+                    <b>{props.message.subject.substring(0, 30)}</b>
+                </td>
+                <td>{props.message.bodyText.substring(0, 100)}</td>
+            </tr>
+            <ViewEmailModal
+                modalIsOpen={modalIsOpen}
+                toggleModalOpen={toggleModalOpen}
+                email={props.message}
+            />
+        </>
+    );
+}
+
+function ViewEmailModal(props) {
+    // Modal docs https://reactstrap.github.io/components/modals/
+    return (
+        <Modal isOpen={props.modalIsOpen} toggle={props.toggleModalOpen}>
+            <ModalHeader toggle={props.toggleModalOpen}>
+                {props.email.subject}
+            </ModalHeader>
+            <ModalBody>
+                <b>From:</b> {props.email.from}
+                <br />
+                <b>To:</b> {props.email.to}
+                <br />
+                <b>Subject:</b> {props.email.subject}
+                <hr />
+                {props.email.bodyText}
+                <br />
+            </ModalBody>
+            <ModalFooter>
+                <Button color="primary" onClick={props.toggleModalOpen}>
+                    Do Something
+                </Button>{" "}
+                <Button color="secondary" onClick={props.toggleModalOpen}>
+                    Cancel
+                </Button>
+            </ModalFooter>
+        </Modal>
     );
 }
 
