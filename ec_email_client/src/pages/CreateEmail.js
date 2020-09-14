@@ -96,6 +96,60 @@ class EmailComposition extends React.Component {
 }
 
 
+
+function createMessage(
+        fromName,
+        fromEmail,
+        toName,
+        toEmail,
+        subject,
+        messageContent
+    ) {
+        // https://developers.google.com/gmail/api/reference/rest/v1/users.messages#Message
+        // https://whatismyipaddress.com/email-header
+        // Look at this sample: https://github.com/googleapis/google-api-nodejs-client/blob/master/samples/gmail/send.js
+        // Fix https://stackoverflow.com/questions/30590988/failed-sending-mail-through-google-api-with-javascript
+
+        const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString(
+            "base64"
+        )}?=`;
+        const messageParts = [
+            `From: ${fromName} <${fromEmail}>`,
+            `To: ${toName} <${toEmail}>`,
+            "Content-Type: text/html; charset=utf-8",
+            "MIME-Version: 1.0",
+            `Subject: ${utf8Subject}`,
+            "",
+            messageContent,
+        ];
+        const message = messageParts.join("\n");
+
+        // The body needs to be base64url encoded.
+        const encodedMessage = Buffer.from(message)
+            .toString("base64")
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/, "");
+
+        return encodedMessage;
+    }
+
+    async function sendMessage(encodedMessage) {
+        // Look at this sample: https://github.com/googleapis/google-api-nodejs-client/blob/master/samples/gmail/send.js
+        // Fix https://stackoverflow.com/questions/30590988/failed-sending-mail-through-google-api-with-javascript
+
+        window.gapi.client.gmail.users.messages
+            .send({
+                userId: "me",
+                resource: {
+                    raw: encodedMessage,
+                },
+            })
+            .then((result) => {
+                console.log(result);
+            });
+    }
+
 export default EmailComposition;
 
 

@@ -7,7 +7,7 @@ import EmailComposition from './pages/CreateEmail.js';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <EmailComposition />
   </React.StrictMode>,
   document.getElementById('root')
 );
