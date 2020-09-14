@@ -182,14 +182,29 @@ function InboxEmailRow(props) {
         setModalIsOpen(!modalIsOpen);
     }
 
+    let from = props.message.from.split(" <")[0];
+    if (from.split(" <")[0].length > 30) {
+        subject = from.substring(0, 30) + "...";
+    }
+
+    let subject = props.message.subject;
+    if (subject.length > 30) {
+        subject = subject.substring(0, 30) + "...";
+    }
+
+    let bodyText = props.message.bodyText;
+    if (bodyText.length > 100) {
+        bodyText = bodyText.substring(0, 100) + "...";
+    }
+
     return (
         <>
             <tr onClick={tellEmailIdOnClick}>
-                <td>{props.message.from.split(" <")[0]}</td>
+                <td>{from}</td>
                 <td>
-                    <b>{props.message.subject.substring(0, 30)}</b>
+                    <b>{subject}</b>
                 </td>
-                <td>{props.message.bodyText.substring(0, 100)}</td>
+                <td>{bodyText}</td>
             </tr>
             <ViewEmailModal
                 modalIsOpen={modalIsOpen}
@@ -203,7 +218,11 @@ function InboxEmailRow(props) {
 function ViewEmailModal(props) {
     // Modal docs https://reactstrap.github.io/components/modals/
     return (
-        <Modal isOpen={props.modalIsOpen} toggle={props.toggleModalOpen}>
+        <Modal
+            isOpen={props.modalIsOpen}
+            toggle={props.toggleModalOpen}
+            id="emailPopupModal"
+        >
             <ModalHeader toggle={props.toggleModalOpen}>
                 {props.email.subject}
             </ModalHeader>
@@ -214,12 +233,17 @@ function ViewEmailModal(props) {
                 <br />
                 <b>Subject:</b> {props.email.subject}
                 <hr />
-                {props.email.bodyText}
+                <div
+                    dangerouslySetInnerHTML={{ __html: props.email.bodyHTML }}
+                />
                 <br />
             </ModalBody>
             <ModalFooter>
                 <Button color="primary" onClick={props.toggleModalOpen}>
-                    Do Something
+                    Reply
+                </Button>{" "}
+                <Button color="primary" onClick={props.toggleModalOpen}>
+                    Forward
                 </Button>{" "}
                 <Button color="secondary" onClick={props.toggleModalOpen}>
                     Cancel

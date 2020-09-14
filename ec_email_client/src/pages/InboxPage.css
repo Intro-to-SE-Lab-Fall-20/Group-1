@@ -7,6 +7,12 @@ table tbody tr {
     cursor: pointer;
 }
 
-.modal-content {
+#emailPopupModal .modal-content {
     overflow-wrap: break-word;
+    width: 80vw;
+}
+
+#emailPopupModal {
+    margin-left: 10vw;
+    margin-right: 10vw;
 }
