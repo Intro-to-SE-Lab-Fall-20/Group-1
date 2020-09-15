@@ -1,0 +1,22 @@
+.Title{
+	float: top;
+	font-family: 'Roboto', sans-serif;
+}
+
+
+#signout_button{
+	float: right;
+	margin-right: 10px;
+}
+
+
+#emailCompButton{
+	float: left;
+	margin: 10px;
+    background-color: #d3d3d3;
+    color: #000000;
+    padding: 10px;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+}

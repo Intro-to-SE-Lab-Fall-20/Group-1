@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { withRouter } from "react-router";
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import "./InboxPage.css";
+import EmailComposition from "./CreateEmail.js";
+import {
+    Table,
+    Button,
+    Modal,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+} from "reactstrap";
 
 // TODO: implement a check to see if GAPI is loaded & signed in, if not, then load and sign in
 
@@ -31,6 +41,7 @@ function InboxPage(props) {
         if (document.getElementById("signout_button").onclick == undefined) {
             signOutButtonHandler();
         }
+
     }
 
     // Assings signout button logout functionality
@@ -147,9 +158,21 @@ function InboxPage(props) {
 
     return (
         <>
-            <div className="Title">Inbox Page</div>
-            <button id="signout_button">Sign Out</button>
+            <div className="Title">Inbox Page
+                <button id="signout_button">Sign Out</button>
+            </div>
+            <Router>
+                <Link to="/email">Create Email</Link>
+                <Switch>
+                    <Route path="/email">
+                        <EmailComposition />
+                    </Route>
+                </Switch>
+            </Router>
+
         </>
+
+
     );
 }
 
