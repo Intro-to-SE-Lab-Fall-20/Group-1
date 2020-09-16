@@ -15,34 +15,7 @@ class EmailComposition extends React.Component {
                     date: new  Date()
                   };
   }
-/*
-  initClient(){
-    console.log("HIT INIT CLIENT");
 
-    // Client ID and API key from the Developer Console
-    var CLIENT_ID = "461282014069-keh5gggejqgqrrv2gtoir1ilppot3mjq.apps.googleusercontent.com";
-
-    var API_KEY = "AIzaSyDoP8Mj4b34VsEJm7AXNneq93cd3z2dpsk";
-
-    // Array of API discovery doc URLs for APIs used by the quickstart
-    var DISCOVERY_DOCS = [
-        "https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
-    ];
-
-    // Authorization scopes required by the API; multiple scopes can be
-    // included, separated by spaces.
-    var SCOPES =
-        "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.modify";
-
-    window.gapi.client
-            .init({
-                apiKey: API_KEY,
-                clientId: CLIENT_ID,
-                discoveryDocs: DISCOVERY_DOCS,
-                scope: SCOPES,
-            })
-  }
-*/
   // All funcitons to handle changes
   onRecipientChange(event) {
     this.setState({recipient: event.target.value})
@@ -70,15 +43,45 @@ class EmailComposition extends React.Component {
           "base64"
     )}?=`;
 
-    const messageParts = [
-        `To: <${this.state.recipient}>`,
-        `CC: <${this.state.cc}>`,
+
+    //PICK UP here 
+
+    //Split the multiple recipients's (if there are multiple) and change commas to tags 
+    //This solution works if a gmail address goes first??? 
+    var toSend = (this.state.recipient).replace("," , "> <")
+    console.log(toSend);
+
+    var messageParts = [
+        `To: <${toSend}>`,
         "Content-Type: text/html; charset=utf-8",
         "MIME-Version: 1.0",
         `Subject: ${utf8Subject}`,
         "",
         this.state.payload,
     ];
+
+    //If there is a cc, need a different format
+    //Works if the first address is a gmail. Makes 0 sense to me.
+    if(this.state.cc != ''){
+        //Split the multiple cc's(if there are multiple) and change commas to tags 
+        var CCs = "<" + this.state.cc +">";
+        CCs = CCs.replace("," , "> <")
+        console.log(CCs);
+
+        messageParts = [
+            `To: <${this.state.recipient}>`,
+            `CC: ${CCs}`,
+            "Content-Type: text/html; charset=utf-8",
+            "MIME-Version: 1.0",
+            `Subject: ${utf8Subject}`,
+            "",
+            this.state.payload,
+        ];
+
+    }
+
+    console.log(messageParts);
+
     const message = messageParts.join("\n");
 
     // The body needs to be base64url encoded.
@@ -101,7 +104,6 @@ class EmailComposition extends React.Component {
 
     /*console.log(this.state);
     console.log("TESTING ... ");
-
     var ToSend = createMessage("test from Name", "jawatters1@gmail.com", this.recipient, this.recipient, this.subject, this.payload);
     sendMessage(ToSend);*/
   }
@@ -122,11 +124,11 @@ class EmailComposition extends React.Component {
        <form id="email-form" onSubmit={this.handleSubmit.bind(this)}>
         <div className="form-group">
             <label>Send To: </label><br />
-            <input type="email" className="form-control" ariavalue={this.state.recipient} onChange={this.onRecipientChange.bind(this)} />
+            <input type="email" multiple className="form-control" value={this.state.recipient} onChange={this.onRecipientChange.bind(this)} />
         </div>
         <div className="form-group">
             <label>CC: </label><br />
-            <input type="email" className="form-control"  value={this.state.cc} onChange={this.onCCChange.bind(this)} />
+            <input type="email" multiple className="form-control"  value={this.state.cc} onChange={this.onCCChange.bind(this)} />
         </div>
         <div className="form-group">
             <label>Subject: </label><br />
@@ -150,35 +152,3 @@ class EmailComposition extends React.Component {
 }
 
 export default withRouter(EmailComposition);
-
-/*
-
-       <div className="EmailCreation">
-       <h2 className="EmailHeader">Send Email</h2>
-
-       <form id="email-form" onSubmit={this.handleSubmit}>
-        <div className="form-group">
-            <label htmlFor="name">Send To: </label><br />
-            <input type="email" className="form-control" aria-describedby="emailHelp" value={this.state.email} onChange={this.onRecipientChange.bind(this)} />
-        </div>
-        <div className="form-group">
-            <label htmlFor="name">CC: </label><br />
-            <input type="email" className="form-control" aria-describedby="emailHelp" value={this.state.cc} onChange={this.onCCChange.bind(this)} />
-        </div>
-        <div className="form-group">
-            <label htmlFor="exampleInputEmail1">Subject: </label><br />
-            <input type="text" className="form-control" value={this.state.subject} onChange={this.onSubjectChange.bind(this)} />
-        </div>
-        <div className="form-group">
-          <label>Add Attachment: </label>
-          <input type="file" className="form-control" value={this.state.name} />
-        </div>
-        <div className="form-group">
-            <label htmlFor="message">Message: </label><br />
-            <textarea className="form-control" rows="15" value={this.state.message} onChange={this.onPayloadChange.bind(this)} />
-        </div>
-        <button type="submit" className="submit-button">Send Email</button>
-        <button type="cancel" className="cancel-button">Cancel</button>
-        </form>
-        </div>
-*/
