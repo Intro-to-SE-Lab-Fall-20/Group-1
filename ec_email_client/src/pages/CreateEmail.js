@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { withRouter } from "react-router";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import Alert from 'react-bootstrap/Alert';
 import "./CreateEmail.css";
 
 
@@ -10,7 +11,7 @@ class EmailComposition extends React.Component {
     super(props);
     this.state =  { recipient: '', 
                     subject: '', 
-                    payload: '', 
+                    message: '', 
                     cc: '',
                     date: new  Date()
                   };
@@ -29,8 +30,8 @@ class EmailComposition extends React.Component {
     this.setState({cc: event.target.value})
   }
 
-  onPayloadChange(event) {
-    this.setState({payload: event.target.value})
+  onMessageChange(event) {
+    this.setState({message: event.target.value})
   }
 
 
@@ -57,7 +58,7 @@ class EmailComposition extends React.Component {
         "MIME-Version: 1.0",
         `Subject: ${utf8Subject}`,
         "",
-        this.state.payload,
+        this.state.message,
     ];
 
     //If there is a cc, need a different format
@@ -75,7 +76,7 @@ class EmailComposition extends React.Component {
             "MIME-Version: 1.0",
             `Subject: ${utf8Subject}`,
             "",
-            this.state.payload,
+            this.state.message,
         ];
 
     }
@@ -100,20 +101,28 @@ class EmailComposition extends React.Component {
         })
         .then((result) => {
             console.log(result);
+            console.log(result.status);
+            if(result.status == 200){
+              //Alert that the email sending was a success
+              alert("Message Sent Successfully");
+            }
+
+            else{
+              alert("Message Failed to Sent");
+            }
         });
 
-    /*console.log(this.state);
-    console.log("TESTING ... ");
-    var ToSend = createMessage("test from Name", "jawatters1@gmail.com", this.recipient, this.recipient, this.subject, this.payload);
-    sendMessage(ToSend);*/
+    //this.clearForm();
   }
 
   clearForm(){
     this.setState({ recipient: '', 
                     subject: '', 
-                    payload: '', 
+                    message: '', 
                     cc: ''
                   })
+
+    //Need to add function that takes user back to Inbox Page here
   }
 
   render(){
@@ -140,7 +149,7 @@ class EmailComposition extends React.Component {
         </div>
         <div className="form-group">
             <label>Message: </label><br />
-            <textarea className="form-control" rows="15" value={this.state.message} onChange={this.onPayloadChange.bind(this)} />
+            <textarea className="form-control" rows="15" value={this.state.message} onChange={this.onMessageChange.bind(this)} />
         </div>
         <button type="submit" className="submit-button">Send Email</button>
         <button type="cancel" className="cancel-button">Cancel</button>
