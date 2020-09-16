@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import { withRouter } from "react-router";
 import logo from "./logo.svg";
+import LoginPage from "./pages/LoginPage";
+import InboxPage from "./pages/InboxPage";
 import "./App.css";
 import InboxPage from "./pages/InboxPage";
 
