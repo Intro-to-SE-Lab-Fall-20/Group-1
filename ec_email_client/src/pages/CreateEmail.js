@@ -72,6 +72,7 @@ class EmailComposition extends React.Component {
 
     const messageParts = [
         `To: <${this.state.recipient}>`,
+        `CC: <${this.state.cc}>`,
         "Content-Type: text/html; charset=utf-8",
         "MIME-Version: 1.0",
         `Subject: ${utf8Subject}`,
@@ -121,7 +122,7 @@ class EmailComposition extends React.Component {
        <form id="email-form" onSubmit={this.handleSubmit.bind(this)}>
         <div className="form-group">
             <label>Send To: </label><br />
-            <input type="email" className="form-control" value={this.state.recipient} onChange={this.onRecipientChange.bind(this)} />
+            <input type="email" className="form-control" ariavalue={this.state.recipient} onChange={this.onRecipientChange.bind(this)} />
         </div>
         <div className="form-group">
             <label>CC: </label><br />
@@ -133,7 +134,7 @@ class EmailComposition extends React.Component {
         </div>
         <div className="form-group">
           <label>Add Attachment: </label>
-          <input type="file" className="form-control" value={this.state.name} />
+          <input type="file" className="form-control" value={this.state.file} />
         </div>
         <div className="form-group">
             <label>Message: </label><br />
