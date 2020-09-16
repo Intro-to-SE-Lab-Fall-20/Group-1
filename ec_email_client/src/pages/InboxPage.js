@@ -11,6 +11,8 @@ import {
 } from "reactstrap";
 
 function InboxPage(props) {
+    const [gapiIsLoaded, setGapiIsLoaded] = useState(false);
+
     async function getMessagesIds(userId) {
         // To get userId of logged in user, give "me"
         if (userId === undefined) userId = "me";
@@ -135,6 +137,8 @@ function InboxPage(props) {
         } else if (!window.gapi.auth2.getAuthInstance().isSignedIn.get()) {
             console.log("INBOX - GAPI was loaded but not signed in");
             props.history.push("/");
+        } else {
+            setGapiIsLoaded(!gapiIsLoaded);
         }
 
         // If button doesn't have funciton, give it logout handler
@@ -180,6 +184,8 @@ function InboxPage(props) {
                     // If not logged in, redirect to login page
                     if (!window.gapi.auth2.getAuthInstance().isSignedIn.get()) {
                         props.history.push("/");
+                    } else {
+                        setGapiIsLoaded(!gapiIsLoaded);
                     }
                 },
                 function (error) {
@@ -189,11 +195,6 @@ function InboxPage(props) {
                 }
             );
     }
-
-    useEffect(() => {
-        checkIfSignedIn();
-        console.log("Inbox page checked if logged in");
-    }, []);
 
     function decodeBase64(data) {
         return atob(data);
@@ -223,32 +224,44 @@ function InboxPage(props) {
     const [emails, setEmails] = useState([]);
 
     useEffect(() => {
-        getAllMessages(10).then((emails) => {
-            setEmails(emails);
-        });
+        checkIfSignedIn();
+        console.log("Inbox page checked if logged in");
     }, []);
 
+    useEffect(() => {
+        console.log(gapiIsLoaded);
+        if (gapiIsLoaded) {
+            getAllMessages(10).then((emails) => {
+                setEmails(emails);
+            });
+        }
+    }, [gapiIsLoaded]);
+
     return (
-        <Table>
-            <thead>
-                <tr>
-                    <td>
-                        <b>From</b>
-                    </td>
-                    <td>
-                        <b>Subject</b>
-                    </td>
-                    <td>
-                        <b>Message</b>
-                    </td>
-                </tr>
-            </thead>
-            <tbody>
-                {emails.map((email) => {
-                    return <InboxEmailRow key={email.id} message={email} />;
-                })}
-            </tbody>
-        </Table>
+        <>
+            <div className="Title">EC Email Client</div>
+            <button id="signout_button">Sign Out</button>
+            <Table>
+                <thead>
+                    <tr>
+                        <td>
+                            <b>From</b>
+                        </td>
+                        <td>
+                            <b>Subject</b>
+                        </td>
+                        <td>
+                            <b>Message</b>
+                        </td>
+                    </tr>
+                </thead>
+                <tbody>
+                    {emails.map((email) => {
+                        return <InboxEmailRow key={email.id} message={email} />;
+                    })}
+                </tbody>
+            </Table>
+        </>
     );
 }
 
@@ -334,4 +347,4 @@ function ViewEmailModal(props) {
     );
 }
 
-export default InboxPage;
+export default withRouter(InboxPage);

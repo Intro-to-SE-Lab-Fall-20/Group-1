@@ -5,8 +5,6 @@ import logo from "./logo.svg";
 import LoginPage from "./pages/LoginPage";
 import InboxPage from "./pages/InboxPage";
 import "./App.css";
-import InboxPage from "./pages/InboxPage";
-
 // TODO: Have login functions passed as props so each page can check for sign ins and handle them
 
 function App() {

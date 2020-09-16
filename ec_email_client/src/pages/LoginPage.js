@@ -15,7 +15,7 @@ function LoginPage(props) {
 
             setTimeout(() => {
                 window.gapi.load("client:auth2", initClient);
-            }, 1000);
+            }, 2000);
         } else if (!window.gapi.auth2.getAuthInstance().isSignedIn.get()) {
             console.log("GAPI was loaded but not signed in");
             initClient();
