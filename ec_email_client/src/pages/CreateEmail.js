@@ -49,11 +49,10 @@ class EmailComposition extends React.Component {
 
     //Split the multiple recipients's (if there are multiple) and change commas to tags 
     //This solution works if a gmail address goes first??? 
-    var toSend = (this.state.recipient).replace("," , "> <")
-    console.log(toSend);
+    var toSend = (this.state.recipient).replace("," , ", ")
 
     var messageParts = [
-        `To: <${toSend}>`,
+        `To: ${toSend}`,
         "Content-Type: text/html; charset=utf-8",
         "MIME-Version: 1.0",
         `Subject: ${utf8Subject}`,
@@ -65,12 +64,10 @@ class EmailComposition extends React.Component {
     //Works if the first address is a gmail. Makes 0 sense to me.
     if(this.state.cc != ''){
         //Split the multiple cc's(if there are multiple) and change commas to tags 
-        var CCs = "<" + this.state.cc +">";
-        CCs = CCs.replace("," , "> <")
-        console.log(CCs);
+        var CCs = (this.state.cc).replace("," , ", ")
 
         messageParts = [
-            `To: <${this.state.recipient}>`,
+            `To: ${toSend}`,
             `CC: ${CCs}`,
             "Content-Type: text/html; charset=utf-8",
             "MIME-Version: 1.0",
@@ -112,7 +109,7 @@ class EmailComposition extends React.Component {
             }
         });
 
-    //this.clearForm();
+    this.clearForm();
   }
 
   clearForm(){
@@ -152,8 +149,9 @@ class EmailComposition extends React.Component {
             <textarea className="form-control" rows="15" value={this.state.message} onChange={this.onMessageChange.bind(this)} />
         </div>
         <button type="submit" className="submit-button">Send Email</button>
-        <button type="cancel" className="cancel-button">Cancel</button>
+        
         </form>
+        <button type="cancel" className="cancel-button" onClick={this.clearForm.bind(this)}>Cancel</button>
         </div>
      );
   }
