@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { withRouter } from "react-router";
 import "./InboxPage.css";
 import {
     Table,
@@ -113,6 +114,86 @@ function InboxPage(props) {
             });
         });
     }
+
+    function checkIfSignedIn() {
+        // Loads/signs in if not loaded
+        if (!window.gapi) {
+            console.log("INBOX - GAPI was not loaded...loading now");
+            const script = document.createElement("script");
+            script.src = "https://apis.google.com/js/api.js";
+            script.async = true;
+            document.body.appendChild(script);
+            document.body.removeChild(script);
+
+            // Sets up gapi, assigns signout button function
+            setTimeout(() => {
+                window.gapi.load("client:auth2", initClient);
+                signOutButtonHandler();
+            }, 1000);
+
+            // If not signed in, go to login page
+        } else if (!window.gapi.auth2.getAuthInstance().isSignedIn.get()) {
+            console.log("INBOX - GAPI was loaded but not signed in");
+            props.history.push("/");
+        }
+
+        // If button doesn't have funciton, give it logout handler
+        if (document.getElementById("signout_button").onclick == undefined) {
+            signOutButtonHandler();
+        }
+    }
+
+    // Assings signout button logout functionality
+    function signOutButtonHandler() {
+        document.getElementById("signout_button").onclick = () => {
+            window.gapi.auth2.getAuthInstance().signOut();
+            console.log("INBOX - Signing out via button");
+            setTimeout(() => {
+                props.history.push("/");
+            }, 500);
+        };
+    }
+
+    function initClient() {
+        var CLIENT_ID =
+            "461282014069-keh5gggejqgqrrv2gtoir1ilppot3mjq.apps.googleusercontent.com";
+        var API_KEY = "AIzaSyDoP8Mj4b34VsEJm7AXNneq93cd3z2dpsk";
+
+        // Array of API discovery doc URLs for APIs used by the quickstart
+        var DISCOVERY_DOCS = [
+            "https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
+        ];
+
+        // Authorization scopes required by the API; multiple scopes can be
+        // included, separated by spaces.
+        var SCOPES = "https://www.googleapis.com/auth/gmail.readonly";
+
+        window.gapi.client
+            .init({
+                apiKey: API_KEY,
+                clientId: CLIENT_ID,
+                discoveryDocs: DISCOVERY_DOCS,
+                scope: SCOPES,
+            })
+            .then(
+                function () {
+                    // If not logged in, redirect to login page
+                    if (!window.gapi.auth2.getAuthInstance().isSignedIn.get()) {
+                        props.history.push("/");
+                    }
+                },
+                function (error) {
+                    console.log(
+                        "INIT CLIENT ERROR: " + JSON.stringify(error, null, 2)
+                    );
+                }
+            );
+    }
+
+    useEffect(() => {
+        checkIfSignedIn();
+        console.log("Inbox page checked if logged in");
+    }, []);
 
     function decodeBase64(data) {
         return atob(data);
