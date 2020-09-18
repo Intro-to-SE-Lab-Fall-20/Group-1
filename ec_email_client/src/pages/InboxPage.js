@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { withRouter } from "react-router";
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import "./InboxPage.css";
 import {
     Table,
@@ -9,14 +7,13 @@ import {
     ModalHeader,
     ModalBody,
     ModalFooter,
+    Spinner,
 } from "reactstrap";
 import EmailComposition from "./CreateEmail.js";
 
 // TODO: implement a check to see if GAPI is loaded & signed in, if not, then load and sign in
 
 function InboxPage(props) {
-    const [gapiIsLoaded, setGapiIsLoaded] = useState(false);
-
     async function getMessagesIds(userId) {
         // To get userId of logged in user, give "me"
         if (userId === undefined) userId = "me";
@@ -121,87 +118,6 @@ function InboxPage(props) {
         });
     }
 
-    function checkIfSignedIn() {
-        // Loads/signs in if not loaded
-        if (!window.gapi) {
-            console.log("INBOX - GAPI was not loaded...loading now");
-            const script = document.createElement("script");
-            script.src = "https://apis.google.com/js/api.js";
-            script.async = true;
-            document.body.appendChild(script);
-            document.body.removeChild(script);
-
-            // Sets up gapi, assigns signout button function
-            setTimeout(() => {
-                window.gapi.load("client:auth2", initClient);
-                signOutButtonHandler();
-            }, 1000);
-
-            // If not signed in, go to login page
-        } else if (!window.gapi.auth2.getAuthInstance().isSignedIn.get()) {
-            console.log("INBOX - GAPI was loaded but not signed in");
-            props.history.push("/");
-        } else {
-            setGapiIsLoaded(!gapiIsLoaded);
-        }
-
-        // If button doesn't have funciton, give it logout handler
-        if (document.getElementById("signout_button").onclick == undefined) {
-            signOutButtonHandler();
-        }
-
-    }
-
-    // Assings signout button logout functionality
-    function signOutButtonHandler() {
-        document.getElementById("signout_button").onclick = () => {
-            window.gapi.auth2.getAuthInstance().signOut();
-            console.log("INBOX - Signing out via button");
-            setTimeout(() => {
-                props.history.push("/");
-            }, 500);
-        };
-    }
-
-    function initClient() {
-        var CLIENT_ID =
-            "461282014069-keh5gggejqgqrrv2gtoir1ilppot3mjq.apps.googleusercontent.com";
-        var API_KEY = "AIzaSyDoP8Mj4b34VsEJm7AXNneq93cd3z2dpsk";
-
-        // Array of API discovery doc URLs for APIs used by the quickstart
-        var DISCOVERY_DOCS = [
-            "https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
-        ];
-
-        // Authorization scopes required by the API; multiple scopes can be
-        // included, separated by spaces.
-    var SCOPES =
-        "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.modify";
-
-        window.gapi.client
-            .init({
-                apiKey: API_KEY,
-                clientId: CLIENT_ID,
-                discoveryDocs: DISCOVERY_DOCS,
-                scope: SCOPES,
-            })
-            .then(
-                function () {
-                    // If not logged in, redirect to login page
-                    if (!window.gapi.auth2.getAuthInstance().isSignedIn.get()) {
-                        props.history.push("/");
-                    } else {
-                        setGapiIsLoaded(!gapiIsLoaded);
-                    }
-                },
-                function (error) {
-                    console.log(
-                        "INIT CLIENT ERROR: " + JSON.stringify(error, null, 2)
-                    );
-                }
-            );
-    }
-
     function decodeBase64(data) {
         return atob(data);
     }
@@ -227,26 +143,28 @@ function InboxPage(props) {
         return decodeBase64(input);
     }
 
+    function toggleCreateEmailModal() {
+        setCreateEmailModalIsOpen(!createEmailModalIsOpen);
+    }
+    const [createEmailModalIsOpen, setCreateEmailModalIsOpen] = useState(false);
     const [emails, setEmails] = useState([]);
 
     useEffect(() => {
-        checkIfSignedIn();
-        console.log("Inbox page checked if logged in");
+        getAllMessages(10).then((emails) => {
+            setEmails(emails);
+        });
     }, []);
-
-    useEffect(() => {
-        console.log(gapiIsLoaded);
-        if (gapiIsLoaded) {
-            getAllMessages(10).then((emails) => {
-                setEmails(emails);
-            });
-        }
-    }, [gapiIsLoaded]);
 
     return (
         <>
-            <div className="Title">EC Email Client</div>
-            <button id="signout_button">Sign Out</button>
+            <button id="create_email" onClick={toggleCreateEmailModal}>
+                Compose Email
+            </button>
+
+            <CreateEmailModal
+                isOpen={createEmailModalIsOpen}
+                toggle={toggleCreateEmailModal}
+            />
             <Table>
                 <thead>
                     <tr>
@@ -267,6 +185,11 @@ function InboxPage(props) {
                     })}
                 </tbody>
             </Table>
+            {emails.length == 0 && (
+                <div style={{ "text-align": "center" }}>
+                    <Spinner color="primary" />
+                </div>
+            )}
         </>
     );
 }
@@ -311,28 +234,14 @@ function InboxEmailRow(props) {
                 toggleModalOpen={toggleModalOpen}
                 email={props.message}
             />
-            <div className="Title">Inbox Page
-                <button id="signout_button">Sign Out</button>
-            </div>
-            {/* <Router>
-                <Link to="/email" id="emailCompButton">Create Email</Link>
-                <Switch>
-                    <Route path="/email">
-                        <EmailComposition />
-                    </Route>
-                </Switch>
-            </Router> */}
-
-            <br/>
-
+            <br />
         </>
-
-
     );
 }
 
 function ViewEmailModal(props) {
     // Modal docs https://reactstrap.github.io/components/modals/
+    // console.log(props.email);
     return (
         <Modal
             isOpen={props.modalIsOpen}
@@ -349,9 +258,16 @@ function ViewEmailModal(props) {
                 <br />
                 <b>Subject:</b> {props.email.subject}
                 <hr />
-                <div
-                    dangerouslySetInnerHTML={{ __html: props.email.bodyHTML }}
-                />
+                {props.email.bodyHTML !== "null" && (
+                    <div
+                        dangerouslySetInnerHTML={{
+                            __html: props.email.bodyHTML,
+                        }}
+                    />
+                )}
+                {props.email.bodyHTML === "null" && (
+                    <div>{props.email.bodyText}</div>
+                )}
                 <br />
             </ModalBody>
             <ModalFooter>
@@ -369,4 +285,15 @@ function ViewEmailModal(props) {
     );
 }
 
-export default withRouter(InboxPage);
+function CreateEmailModal(props) {
+    return (
+        <Modal isOpen={props.isOpen} toggle={props.toggle} id="emailPopupModal">
+            <ModalHeader toggle={props.toggle}>Create Eamil</ModalHeader>
+            <ModalBody>
+                <EmailComposition toggle={props.toggle} />
+            </ModalBody>
+        </Modal>
+    );
+}
+
+export default InboxPage;
