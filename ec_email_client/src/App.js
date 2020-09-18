@@ -4,6 +4,7 @@ import { withRouter } from "react-router";
 import logo from "./logo.svg";
 import LoginPage from "./pages/LoginPage";
 import InboxPage from "./pages/InboxPage";
+import EmailComposition from "./pages/CreateEmail.js";
 import "./App.css";
 // TODO: Have login functions passed as props so each page can check for sign ins and handle them
 
