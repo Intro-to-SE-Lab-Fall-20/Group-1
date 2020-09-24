@@ -1,3 +1,21 @@
+table {
+    width: 100%;
+    text-align: left;
+}
+
+table tbody tr {
+    cursor: pointer;
+}
+
+#emailPopupModal .modal-content {
+    overflow-wrap: break-word;
+    width: 80vw;
+}
+
+#emailPopupModal {
+    margin-left: 10vw;
+    margin-right: 10vw;
+}
 .Title{
 	float: top;
 	font-family: 'Roboto', sans-serif;
