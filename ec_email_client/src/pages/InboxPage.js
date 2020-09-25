@@ -122,6 +122,12 @@ function InboxPage(props) {
         return atob(data);
     }
 
+    function Test() {
+        getAllMessages(emails.length += 10).then((emails) => {
+            setEmails(emails);
+        });
+    }
+
     function decodeBase64HTML(data) {
         // Replace non-url compatible chars with base64 standard chars
         if (data == undefined) {
@@ -165,26 +171,29 @@ function InboxPage(props) {
                 isOpen={createEmailModalIsOpen}
                 toggle={toggleCreateEmailModal}
             />
-            <Table>
-                <thead>
-                    <tr>
-                        <td>
-                            <b>From</b>
-                        </td>
-                        <td>
-                            <b>Subject</b>
-                        </td>
-                        <td>
-                            <b>Message</b>
-                        </td>
-                    </tr>
-                </thead>
-                <tbody>
-                    {emails.map((email) => {
-                        return <InboxEmailRow key={email.id} message={email} />;
-                    })}
-                </tbody>
-            </Table>
+            <div class="tableFixHead">
+                <Table>
+                    <thead>
+                        <tr>
+                            <td>
+                                <b>From</b>
+                            </td>
+                            <td>
+                                <b>Subject</b>
+                            </td>
+                            <td>
+                                <b>Message</b>
+                            </td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {emails.map((email) => {
+                            return <InboxEmailRow key={email.id} message={email} />;
+                        })}
+                        {<button class="loadMoreButton" onClick={Test}>Load More</button>}
+                    </tbody>
+                </Table>
+            </div>
             {emails.length == 0 && (
                 <div style={{ "text-align": "center" }}>
                     <Spinner color="primary" />
@@ -206,8 +215,8 @@ function InboxEmailRow(props) {
     }
 
     let from = props.message.from.split(" <")[0];
-    if (from.split(" <")[0].length > 30) {
-        subject = from.substring(0, 30) + "...";
+    if (from.length > 30) {
+        from = from.substring(0, 30) + "...";
     }
 
     let subject = props.message.subject;
@@ -234,7 +243,6 @@ function InboxEmailRow(props) {
                 toggleModalOpen={toggleModalOpen}
                 email={props.message}
             />
-            <br />
         </>
     );
 }
