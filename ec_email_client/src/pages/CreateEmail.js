@@ -13,14 +13,20 @@ class EmailComposition extends React.Component {
             date: new Date(),
         };
 
-        console.log(props);
+        // Formats fields if it is a reply
         if (this.props.reply) {
             console.log("THIS IS A REPLY");
             let tempMessage = `\n\n\nFrom: ${this.props.replyMessage.from}\nTo: ${this.props.replyMessage.to}\nSubject: ${this.props.replyMessage.subject}\n------------------------------------------------\n${this.props.replyMessage.bodyText}`;
 
+            let recipientField = this.props.replyMessage.from.split("<")[1];
+            recipientField = recipientField.substring(
+                0,
+                recipientField.length - 1
+            );
+
             this.state = {
-                recipient: this.props.replyMessage.from,
-                subject: "RE: " + this.props.replyMessage.subject,
+                recipient: recipientField,
+                subject: this.props.replyMessage.subject,
                 message: tempMessage,
                 cc: "",
                 date: new Date(),
@@ -61,6 +67,7 @@ class EmailComposition extends React.Component {
             this.state.subject
         ).toString("base64")}?=`;
 
+        let threadId = null;
         //PICK UP here
 
         //Split the multiple recipients's (if there are multiple) and change commas to tags
@@ -76,23 +83,34 @@ class EmailComposition extends React.Component {
             this.state.message,
         ];
 
-        // Reply test
-        // if (this.props.reply) {
-        //     let tempSubject = `=?utf-8?B?${Buffer.from(
-        //         "RE: Reply to me - EC Email test"
-        //     ).toString("base64")}?=`;
-        //     messageParts = [
-        //         `To: ${toSend}`,
-        //         "Content-Type: text/html; charset=utf-8",
-        //         "MIME-Version: 1.0",
-        //         `Subject: ${tempSubject}`,
-        //         "In-Reply-To: <DM6PR13MB4129DA48319ED28398220C7ED5380@DM6PR13MB4129.namprd13.prod.outlook.com>",
-        //         'Reply-To: "Patrick Belly" <mewingfugur@gmail.com>',
-        //         "References: <DM6PR13MB4129DA48319ED28398220C7ED5380@DM6PR13MB4129.namprd13.prod.outlook.com>",
-        //         "",
-        //         this.state.message,
-        //     ];
-        // }
+        // If reply
+        if (this.props.reply) {
+            let tempSubject = `=?utf-8?B?${Buffer.from(
+                `RE: ${utf8Subject}`
+            ).toString("base64")}?=`;
+
+            console.log(this.props.replyMessage);
+            let inReplyTo = this.props.replyMessage.headers["Message-Id"];
+
+            let references = inReplyTo;
+            if (this.props.replyMessage.headers["References"]) {
+                references = `${inReplyTo},${this.props.replyMessage.headers["References"]}`;
+            }
+
+            threadId = this.props.replyMessage.threadId;
+
+            messageParts = [
+                `To: ${toSend}`,
+                "Content-Type: text/html; charset=utf-8",
+                "MIME-Version: 1.0",
+                `Subject: ${tempSubject}`,
+                `In-Reply-To: ${inReplyTo}`,
+                `Reply-To: ${this.props.replyMessage.to}`,
+                `References: ${references}`,
+                "",
+                this.state.message,
+            ];
+        }
 
         //If there is a cc, need a different format
         //Works if the first address is a gmail. Makes 0 sense to me.
@@ -127,7 +145,7 @@ class EmailComposition extends React.Component {
                 userId: "me",
                 resource: {
                     raw: encodedMessage,
-                    threadId: "174bd07d177de2c2",
+                    threadId: threadId,
                 },
             })
             .then((result) => {
