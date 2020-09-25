@@ -12,6 +12,18 @@ class EmailComposition extends React.Component {
             cc: "",
             date: new Date(),
         };
+
+        console.log(props);
+        if (this.props.reply) {
+            console.log("THIS IS A REPLY");
+            this.state = {
+                recipient: this.props.replyMessage.from,
+                subject: "RE: " + this.props.replyMessage.subject,
+                message: "",
+                cc: "",
+                date: new Date(),
+            };
+        }
     }
 
     // All funcitons to handle changes
@@ -55,6 +67,24 @@ class EmailComposition extends React.Component {
             this.state.message,
         ];
 
+        // Reply test
+        // if (this.props.reply) {
+        //     let tempSubject = `=?utf-8?B?${Buffer.from(
+        //         "RE: Reply to me - EC Email test"
+        //     ).toString("base64")}?=`;
+        //     messageParts = [
+        //         `To: ${toSend}`,
+        //         "Content-Type: text/html; charset=utf-8",
+        //         "MIME-Version: 1.0",
+        //         `Subject: ${tempSubject}`,
+        //         "In-Reply-To: <DM6PR13MB4129DA48319ED28398220C7ED5380@DM6PR13MB4129.namprd13.prod.outlook.com>",
+        //         'Reply-To: "Patrick Belly" <mewingfugur@gmail.com>',
+        //         "References: <DM6PR13MB4129DA48319ED28398220C7ED5380@DM6PR13MB4129.namprd13.prod.outlook.com>",
+        //         "",
+        //         this.state.message,
+        //     ];
+        // }
+
         //If there is a cc, need a different format
         //Works if the first address is a gmail. Makes 0 sense to me.
         if (this.state.cc != "") {
@@ -88,6 +118,7 @@ class EmailComposition extends React.Component {
                 userId: "me",
                 resource: {
                     raw: encodedMessage,
+                    threadId: "174bd07d177de2c2",
                 },
             })
             .then((result) => {

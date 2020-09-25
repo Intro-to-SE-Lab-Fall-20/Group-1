@@ -41,6 +41,8 @@ function InboxPage(props) {
             subject: "null",
             headers: {},
             id: "null",
+            snippet: "null",
+            threadId: "null",
         };
 
         return new Promise((resolve, reject) => {
@@ -76,6 +78,18 @@ function InboxPage(props) {
                             response.result
                         );
                     }
+
+                    // Adds snippet for preview
+                    if (response.result.snippet) {
+                        message.snippet = response.result.snippet;
+                    }
+
+                    if (response.result.threadId)
+                        message.threadId = response.result.threadId;
+
+                    // TESTING
+                    // if (response.result.snippet == "Please reply")
+                    console.log(response.result);
 
                     // Gets all headers, turns in to dict
                     let headers = {};
@@ -205,9 +219,19 @@ function InboxEmailRow(props) {
         setModalIsOpen(!modalIsOpen);
     }
 
+    const [createEmailModalIsOpen, setCreateEmailModalIsOpen] = useState(false);
+    function toggleCreateEmailModal() {
+        setCreateEmailModalIsOpen(!createEmailModalIsOpen);
+    }
+
+    function setupReply() {
+        setModalIsOpen(false);
+        setCreateEmailModalIsOpen(true);
+    }
+
     let from = props.message.from.split(" <")[0];
-    if (from.split(" <")[0].length > 30) {
-        subject = from.substring(0, 30) + "...";
+    if (from.length > 30) {
+        from = from.substring(0, 30) + "...";
     }
 
     let subject = props.message.subject;
@@ -233,6 +257,13 @@ function InboxEmailRow(props) {
                 modalIsOpen={modalIsOpen}
                 toggleModalOpen={toggleModalOpen}
                 email={props.message}
+                replyFunction={setupReply}
+            />
+            <CreateEmailModal
+                isOpen={createEmailModalIsOpen}
+                toggle={toggleCreateEmailModal}
+                reply={true}
+                replyMessage={props.message}
             />
             <br />
         </>
@@ -242,6 +273,9 @@ function InboxEmailRow(props) {
 function ViewEmailModal(props) {
     // Modal docs https://reactstrap.github.io/components/modals/
     // console.log(props.email);
+
+    function triggerEmailReply() {}
+
     return (
         <Modal
             isOpen={props.modalIsOpen}
@@ -271,7 +305,7 @@ function ViewEmailModal(props) {
                 <br />
             </ModalBody>
             <ModalFooter>
-                <Button color="primary" onClick={props.toggleModalOpen}>
+                <Button color="primary" onClick={props.replyFunction}>
                     Reply
                 </Button>{" "}
                 <Button color="primary" onClick={props.toggleModalOpen}>
@@ -290,7 +324,11 @@ function CreateEmailModal(props) {
         <Modal isOpen={props.isOpen} toggle={props.toggle} id="emailPopupModal">
             <ModalHeader toggle={props.toggle}>Create Eamil</ModalHeader>
             <ModalBody>
-                <EmailComposition toggle={props.toggle} />
+                <EmailComposition
+                    toggle={props.toggle}
+                    reply={props.reply}
+                    replyMessage={props.replyMessage}
+                />
             </ModalBody>
         </Modal>
     );
