@@ -16,13 +16,22 @@ class EmailComposition extends React.Component {
         console.log(props);
         if (this.props.reply) {
             console.log("THIS IS A REPLY");
+            let tempMessage = `\n\n\nFrom: ${this.props.replyMessage.from}\nTo: ${this.props.replyMessage.to}\nSubject: ${this.props.replyMessage.subject}\n------------------------------------------------\n${this.props.replyMessage.bodyText}`;
+
             this.state = {
                 recipient: this.props.replyMessage.from,
                 subject: "RE: " + this.props.replyMessage.subject,
-                message: "",
+                message: tempMessage,
                 cc: "",
                 date: new Date(),
             };
+
+            // Puts cursor at top of message box instead of bottom beneath the reply message.
+            setTimeout(() => {
+                let textBox = document.getElementsByTagName("textarea")[0];
+                textBox.focus();
+                textBox.selectionEnd = 0;
+            }, 500);
         }
     }
 

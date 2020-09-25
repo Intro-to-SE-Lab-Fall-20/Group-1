@@ -22,6 +22,7 @@ function InboxPage(props) {
             window.gapi.client.gmail.users.messages
                 .list({
                     userId: userId,
+                    labelIds: ["INBOX"],
                 })
                 .then(function (response) {
                     resolve(response.result.messages);
