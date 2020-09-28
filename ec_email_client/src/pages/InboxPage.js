@@ -122,7 +122,7 @@ function InboxPage(props) {
         return atob(data);
     }
 
-    function Test() {
+    function LoadEmails() {
         getAllMessages(emails.length += 10).then((emails) => {
             setEmails(emails);
         });
@@ -190,7 +190,7 @@ function InboxPage(props) {
                         {emails.map((email) => {
                             return <InboxEmailRow key={email.id} message={email} />;
                         })}
-                        {<button class="loadMoreButton" onClick={Test}>Load More</button>}
+                        {<button class="loadMoreButton" onClick={LoadEmails}>Load More</button>}
                     </tbody>
                 </Table>
             </div>
@@ -296,7 +296,7 @@ function ViewEmailModal(props) {
 function CreateEmailModal(props) {
     return (
         <Modal isOpen={props.isOpen} toggle={props.toggle} id="emailPopupModal">
-            <ModalHeader toggle={props.toggle}>Create Eamil</ModalHeader>
+            <ModalHeader toggle={props.toggle}>Create Email</ModalHeader>
             <ModalBody>
                 <EmailComposition toggle={props.toggle} />
             </ModalBody>
