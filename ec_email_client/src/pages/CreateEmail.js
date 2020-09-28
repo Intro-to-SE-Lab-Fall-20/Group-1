@@ -11,6 +11,8 @@ class EmailComposition extends React.Component {
             message: "",
             cc: "",
             date: new Date(),
+            file: '',
+            file64: ''
         };
     }
 
@@ -29,6 +31,32 @@ class EmailComposition extends React.Component {
 
     onMessageChange(event) {
         this.setState({ message: event.target.value });
+    }
+
+    onFileChange(event) {
+
+        this.setState({file: event.target.files[0]})
+        let file1 = event.target.files[0];
+
+        //Encode Attachment to base 64
+        this.getBase64(file1, (result) => {
+            var file64a = result;
+            var file64b = result.split('base64,')[1];
+            //console.log(file64);
+            this.setState({file64: file64b});
+        });
+    }
+
+    //Need to keep original file data, but also must encode to send
+    getBase64(file, cb) {
+        let reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function () {
+            cb(reader.result)
+        };
+        reader.onerror = function (error) {
+            console.log('Error: ', error);
+        };
     }
 
     //JS Fetch API to send the form data
@@ -72,6 +100,34 @@ class EmailComposition extends React.Component {
             ];
         }
 
+        //If the email has an attachment, it needs to use the multipart structure
+        if (this.state.file != "") {
+
+            var messageParts = [
+                `Content-Type: multipart/mixed; boundary="foo_bar_baz"`, 
+                "MIME-Version: 1.0",
+                //`Content-Disposition: ${this.state.file.name}`,
+                `To: ${toSend}`,
+                `Subject: ${utf8Subject}`,
+                "",
+
+                "--foo_bar_baz",
+                "Content-Type: text/html; charset=utf-8",
+                "MIME-Version: 1.0",
+                "Content-Transfer-Encoding: 7bit",
+                this.state.message,
+
+                "--foo_bar_baz",
+                `Content-Type: ${this.state.file.type}`,
+                "MIME-Version: 1.0",
+                "Content-Transfer-Encoding: base64",
+                `Content-Disposition: attachment; filename="${this.state.file.name}"`,
+                this.state.file64,
+                "--foo_bar_baz",
+
+            ];
+        }
+
         console.log(messageParts);
 
         const message = messageParts.join("\n");
@@ -105,7 +161,7 @@ class EmailComposition extends React.Component {
     }
 
     clearForm() {
-        this.setState({ recipient: "", subject: "", message: "", cc: "" });
+        this.setState({ recipient: "", subject: "", message: "", cc: "", file: "", file64: ""});
         this.props.toggle();
         //Need to add function that takes user back to Inbox Page here
     }
@@ -153,7 +209,8 @@ class EmailComposition extends React.Component {
                         <input
                             type="file"
                             className="form-control"
-                            value={this.state.file}
+                            name="file"
+                            onChange={this.onFileChange.bind(this)}
                         />
                     </div>
                     <div className="form-group">
