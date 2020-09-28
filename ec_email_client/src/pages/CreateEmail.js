@@ -74,6 +74,11 @@ class EmailComposition extends React.Component {
         //This solution works if a gmail address goes first???
         var toSend = this.state.recipient.replace(",", ", ");
 
+        // TODO: Possible make content editable div to render HTML? Or maybe just display reply email below the text are as a div
+        // https://stackoverflow.com/questions/4705848/rendering-html-inside-textarea
+
+        // Could just make all newLines be <br /> or something?
+
         var messageParts = [
             `To: ${toSend}`,
             "Content-Type: text/html; charset=utf-8",
