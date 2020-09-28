@@ -34,9 +34,9 @@ class EmailComposition extends React.Component {
     }
 
     onFileChange(event) {
-
-        this.setState({file: event.target.files[0]})
+        this.setState({file: event.target.files[0]});
         let file1 = event.target.files[0];
+        this.validateAttachment(file1);
 
         //Encode Attachment to base 64
         this.getBase64(file1, (result) => {
@@ -45,6 +45,7 @@ class EmailComposition extends React.Component {
             //console.log(file64);
             this.setState({file64: file64b});
         });
+
     }
 
     //Need to keep original file data, but also must encode to send
@@ -59,9 +60,17 @@ class EmailComposition extends React.Component {
         };
     }
 
+    //Testing that file size is under 25MB
+    validateAttachment(fileTest){
+        if(fileTest.size > 25000000){
+            alert("Attachments cannot exceed 25MB");
+            this.setState({file: '',
+                           file64: ''});
+        }
+    }
+
     //JS Fetch API to send the form data
     handleSubmit(event) {
-        //this.initClient();
         event.preventDefault();
         //Must encode subject line
         const utf8Subject = `=?utf-8?B?${Buffer.from(
@@ -73,9 +82,11 @@ class EmailComposition extends React.Component {
         //Split the multiple recipients's (if there are multiple) and change commas to tags
         //This solution works if a gmail address goes first???
         var toSend = this.state.recipient.replace(",", ", ");
+        var CCs = this.state.cc.replace(",", ", ");
 
         var messageParts = [
             `To: ${toSend}`,
+            `CC: ${CCs}`,
             "Content-Type: text/html; charset=utf-8",
             "MIME-Version: 1.0",
             `Subject: ${utf8Subject}`,
@@ -83,22 +94,6 @@ class EmailComposition extends React.Component {
             this.state.message,
         ];
 
-        //If there is a cc, need a different format
-        //Works if the first address is a gmail. Makes 0 sense to me.
-        if (this.state.cc != "") {
-            //Split the multiple cc's(if there are multiple) and change commas to tags
-            var CCs = this.state.cc.replace(",", ", ");
-
-            messageParts = [
-                `To: ${toSend}`,
-                `CC: ${CCs}`,
-                "Content-Type: text/html; charset=utf-8",
-                "MIME-Version: 1.0",
-                `Subject: ${utf8Subject}`,
-                "",
-                this.state.message,
-            ];
-        }
 
         //If the email has an attachment, it needs to use the multipart structure
         if (this.state.file != "") {
@@ -106,8 +101,8 @@ class EmailComposition extends React.Component {
             var messageParts = [
                 `Content-Type: multipart/mixed; boundary="foo_bar_baz"`, 
                 "MIME-Version: 1.0",
-                //`Content-Disposition: ${this.state.file.name}`,
                 `To: ${toSend}`,
+                `CC: ${CCs}`,
                 `Subject: ${utf8Subject}`,
                 "",
 
