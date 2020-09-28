@@ -34,17 +34,27 @@ class EmailComposition extends React.Component {
     }
 
     onFileChange(event) {
-        this.setState({file: event.target.files[0]});
-        let file1 = event.target.files[0];
-        this.validateAttachment(file1);
+        //Only update to file if initializing, not cancelling attachment
+        if(event.target.value.length != 0){
+            this.setState({file: event.target.files[0]});
+            let file1 = event.target.files[0];
+            if(this.validateAttachment(file1) == false){
+                event.target.value = '';
+            }
 
-        //Encode Attachment to base 64
-        this.getBase64(file1, (result) => {
-            var file64a = result;
-            var file64b = result.split('base64,')[1];
-            //console.log(file64);
-            this.setState({file64: file64b});
-        });
+            //Encode Attachment to base 64
+            this.getBase64(file1, (result) => {
+                var file64a = result;
+                var file64b = result.split('base64,')[1];
+                //console.log(file64);
+                this.setState({file64: file64b});
+            });
+        }
+        //No file was chosen, reset values
+        else{
+            this.setState({file: '', file64: ''});
+            event.target.value = '';
+        }
 
     }
 
@@ -66,7 +76,9 @@ class EmailComposition extends React.Component {
             alert("Attachments cannot exceed 25MB");
             this.setState({file: '',
                            file64: ''});
+            return false;
         }
+        return true;
     }
 
     //JS Fetch API to send the form data
@@ -142,8 +154,6 @@ class EmailComposition extends React.Component {
                 },
             })
             .then((result) => {
-                console.log(result);
-                console.log(result.status);
                 if (result.status == 200) {
                     //Alert that the email sending was a success
                     alert("Message Sent Successfully");
@@ -204,7 +214,8 @@ class EmailComposition extends React.Component {
                         <input
                             type="file"
                             className="form-control"
-                            name="file"
+                            name="fileInput"
+                            id="formAttachment"
                             onChange={this.onFileChange.bind(this)}
                         />
                     </div>
