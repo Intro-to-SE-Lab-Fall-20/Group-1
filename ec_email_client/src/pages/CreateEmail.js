@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { renderToString } from "react-dom/server";
 import Alert from "react-bootstrap/Alert";
 import "./CreateEmail.css";
 
@@ -15,9 +16,6 @@ class EmailComposition extends React.Component {
 
         // Formats fields if it is a reply
         if (this.props.reply) {
-            console.log("THIS IS A REPLY");
-            let tempMessage = `\n\n\nFrom: ${this.props.replyMessage.from}\nTo: ${this.props.replyMessage.to}\nSubject: ${this.props.replyMessage.subject}\n------------------------------------------------\n${this.props.replyMessage.bodyText}`;
-
             let recipientField = this.props.replyMessage.from.split("<")[1];
             recipientField = recipientField.substring(
                 0,
@@ -26,8 +24,8 @@ class EmailComposition extends React.Component {
 
             this.state = {
                 recipient: recipientField,
-                subject: this.props.replyMessage.subject,
-                message: tempMessage,
+                subject: "Re: " + this.props.replyMessage.subject,
+                message: "",
                 cc: "",
                 date: new Date(),
             };
@@ -91,7 +89,7 @@ class EmailComposition extends React.Component {
         // If reply
         if (this.props.reply) {
             let tempSubject = `=?utf-8?B?${Buffer.from(
-                `RE: ${utf8Subject}`
+                `${utf8Subject}`
             ).toString("base64")}?=`;
 
             console.log(this.props.replyMessage);
@@ -113,7 +111,9 @@ class EmailComposition extends React.Component {
                 `Reply-To: ${this.props.replyMessage.to}`,
                 `References: ${references}`,
                 "",
-                this.state.message,
+                this.state.message +
+                    "<br/><br/><hr/>" +
+                    renderToString(this.displayReplyEmail()),
             ];
         }
 
@@ -173,6 +173,35 @@ class EmailComposition extends React.Component {
         //Need to add function that takes user back to Inbox Page here
     }
 
+    displayReplyEmail() {
+        return (
+            <div>
+                <b>From: </b>
+                {this.props.replyMessage.from}
+                <br />
+                <b>To: </b>
+                {this.props.replyMessage.to}
+                <br />
+                <b>Subject: </b>
+                {this.props.replyMessage.subject}
+                <br />
+                <hr />
+                <br />
+                {this.props.replyMessage.bodyHTML != "null" && (
+                    <div
+                        id="replyEmailDiv"
+                        dangerouslySetInnerHTML={{
+                            __html: this.props.replyMessage.bodyHTML,
+                        }}
+                    />
+                )}
+                {this.props.replyMessage.bodyHTML == "null" &&
+                    this.props.replyMessage.bodyText}
+                <br />
+            </div>
+        );
+    }
+
     render() {
         return (
             <div className="EmailCreation">
@@ -229,6 +258,7 @@ class EmailComposition extends React.Component {
                             onChange={this.onMessageChange.bind(this)}
                         />
                     </div>
+                    {this.props.reply && this.displayReplyEmail()}
                     <button type="submit" className="submit-button">
                         Send Email
                     </button>

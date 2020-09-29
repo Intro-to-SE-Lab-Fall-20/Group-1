@@ -88,8 +88,6 @@ function InboxPage(props) {
                     if (response.result.threadId)
                         message.threadId = response.result.threadId;
 
-                    // TESTING
-                    // if (response.result.snippet == "Please reply")
                     console.log(response.result);
 
                     // Gets all headers, turns in to dict
@@ -252,7 +250,7 @@ function InboxEmailRow(props) {
                 <td>
                     <b>{subject}</b>
                 </td>
-                <td>{bodyText}</td>
+                <td>{props.message.snippet}</td>
             </tr>
             <ViewEmailModal
                 modalIsOpen={modalIsOpen}
