@@ -135,6 +135,12 @@ function InboxPage(props) {
         return atob(data);
     }
 
+    function LoadEmails() {
+        getAllMessages(emails.length += 10).then((emails) => {
+            setEmails(emails);
+        });
+    }
+
     function decodeBase64HTML(data) {
         // Replace non-url compatible chars with base64 standard chars
         if (data == undefined) {
@@ -178,26 +184,29 @@ function InboxPage(props) {
                 isOpen={createEmailModalIsOpen}
                 toggle={toggleCreateEmailModal}
             />
-            <Table>
-                <thead>
-                    <tr>
-                        <td>
-                            <b>From</b>
-                        </td>
-                        <td>
-                            <b>Subject</b>
-                        </td>
-                        <td>
-                            <b>Message</b>
-                        </td>
-                    </tr>
-                </thead>
-                <tbody>
-                    {emails.map((email) => {
-                        return <InboxEmailRow key={email.id} message={email} />;
-                    })}
-                </tbody>
-            </Table>
+            <div class="tableFixHead">
+                <Table>
+                    <thead>
+                        <tr>
+                            <td>
+                                <b>From</b>
+                            </td>
+                            <td>
+                                <b>Subject</b>
+                            </td>
+                            <td>
+                                <b>Message</b>
+                            </td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {emails.map((email) => {
+                            return <InboxEmailRow key={email.id} message={email} />;
+                        })}
+                        {<button class="loadMoreButton" onClick={LoadEmails}>Load More</button>}
+                    </tbody>
+                </Table>
+            </div>
             {emails.length == 0 && (
                 <div style={{ "text-align": "center" }}>
                     <Spinner color="primary" />
@@ -264,7 +273,6 @@ function InboxEmailRow(props) {
                 reply={true}
                 replyMessage={props.message}
             />
-            <br />
         </>
     );
 }
@@ -321,7 +329,7 @@ function ViewEmailModal(props) {
 function CreateEmailModal(props) {
     return (
         <Modal isOpen={props.isOpen} toggle={props.toggle} id="emailPopupModal">
-            <ModalHeader toggle={props.toggle}>Create Eamil</ModalHeader>
+            <ModalHeader toggle={props.toggle}>Create Email</ModalHeader>
             <ModalBody>
                 <EmailComposition
                     toggle={props.toggle}

@@ -1,3 +1,32 @@
+.tableFixHead {
+    overflow-y: auto;
+    height: 500px;
+}
+.tableFixHead thead th {
+    position: sticky;
+    top: 0;
+}
+.tableFixHead tbody tr:hover {
+    background: lightgray;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+th,
+td {
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+}
+th {
+    background: #eee;
+}
+
+.loadMoreButton {
+    width: 100%;
+}
+
+
 table {
     width: 100%;
     text-align: left;

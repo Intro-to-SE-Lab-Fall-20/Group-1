@@ -12,6 +12,8 @@ class EmailComposition extends React.Component {
             message: "",
             cc: "",
             date: new Date(),
+            file: "",
+            file64: "",
         };
 
         // Formats fields if it is a reply
@@ -56,9 +58,54 @@ class EmailComposition extends React.Component {
         this.setState({ message: event.target.value });
     }
 
+    onFileChange(event) {
+        //Only update to file if initializing, not cancelling attachment
+        if (event.target.value.length != 0) {
+            this.setState({ file: event.target.files[0] });
+            let file1 = event.target.files[0];
+            if (this.validateAttachment(file1) == false) {
+                event.target.value = "";
+            }
+
+            //Encode Attachment to base 64
+            this.getBase64(file1, (result) => {
+                var file64a = result;
+                var file64b = result.split("base64,")[1];
+                //console.log(file64);
+                this.setState({ file64: file64b });
+            });
+        }
+        //No file was chosen, reset values
+        else {
+            this.setState({ file: "", file64: "" });
+            event.target.value = "";
+        }
+    }
+
+    //Need to keep original file data, but also must encode to send
+    getBase64(file, cb) {
+        let reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function () {
+            cb(reader.result);
+        };
+        reader.onerror = function (error) {
+            console.log("Error: ", error);
+        };
+    }
+
+    //Testing that file size is under 25MB
+    validateAttachment(fileTest) {
+        if (fileTest.size > 25000000) {
+            alert("Attachments cannot exceed 25MB");
+            this.setState({ file: "", file64: "" });
+            return false;
+        }
+        return true;
+    }
+
     //JS Fetch API to send the form data
     handleSubmit(event) {
-        //this.initClient();
         event.preventDefault();
         //Must encode subject line
         const utf8Subject = `=?utf-8?B?${Buffer.from(
@@ -71,6 +118,7 @@ class EmailComposition extends React.Component {
         //Split the multiple recipients's (if there are multiple) and change commas to tags
         //This solution works if a gmail address goes first???
         var toSend = this.state.recipient.replace(",", ", ");
+        var CCs = this.state.cc.replace(",", ", ");
 
         // TODO: Possible make content editable div to render HTML? Or maybe just display reply email below the text are as a div
         // https://stackoverflow.com/questions/4705848/rendering-html-inside-textarea
@@ -79,6 +127,7 @@ class EmailComposition extends React.Component {
 
         var messageParts = [
             `To: ${toSend}`,
+            `CC: ${CCs}`,
             "Content-Type: text/html; charset=utf-8",
             "MIME-Version: 1.0",
             `Subject: ${utf8Subject}`,
@@ -117,20 +166,29 @@ class EmailComposition extends React.Component {
             ];
         }
 
-        //If there is a cc, need a different format
-        //Works if the first address is a gmail. Makes 0 sense to me.
-        if (this.state.cc != "") {
-            //Split the multiple cc's(if there are multiple) and change commas to tags
-            var CCs = this.state.cc.replace(",", ", ");
-
-            messageParts = [
+        //If the email has an attachment, it needs to use the multipart structure
+        if (this.state.file != "") {
+            var messageParts = [
+                `Content-Type: multipart/mixed; boundary="foo_bar_baz"`,
+                "MIME-Version: 1.0",
                 `To: ${toSend}`,
                 `CC: ${CCs}`,
-                "Content-Type: text/html; charset=utf-8",
-                "MIME-Version: 1.0",
                 `Subject: ${utf8Subject}`,
                 "",
+
+                "--foo_bar_baz",
+                "Content-Type: text/html; charset=utf-8",
+                "MIME-Version: 1.0",
+                "Content-Transfer-Encoding: 7bit",
                 this.state.message,
+
+                "--foo_bar_baz",
+                `Content-Type: ${this.state.file.type}`,
+                "MIME-Version: 1.0",
+                "Content-Transfer-Encoding: base64",
+                `Content-Disposition: attachment; filename="${this.state.file.name}"`,
+                this.state.file64,
+                "--foo_bar_baz",
             ];
         }
 
@@ -154,8 +212,6 @@ class EmailComposition extends React.Component {
                 },
             })
             .then((result) => {
-                console.log(result);
-                console.log(result.status);
                 if (result.status == 200) {
                     //Alert that the email sending was a success
                     alert("Message Sent Successfully");
@@ -168,7 +224,14 @@ class EmailComposition extends React.Component {
     }
 
     clearForm() {
-        this.setState({ recipient: "", subject: "", message: "", cc: "" });
+        this.setState({
+            recipient: "",
+            subject: "",
+            message: "",
+            cc: "",
+            file: "",
+            file64: "",
+        });
         this.props.toggle();
         //Need to add function that takes user back to Inbox Page here
     }
@@ -245,7 +308,9 @@ class EmailComposition extends React.Component {
                         <input
                             type="file"
                             className="form-control"
-                            value={this.state.file}
+                            name="fileInput"
+                            id="formAttachment"
+                            onChange={this.onFileChange.bind(this)}
                         />
                     </div>
                     <div className="form-group">
