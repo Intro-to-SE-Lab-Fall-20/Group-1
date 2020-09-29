@@ -1,3 +1,32 @@
+.tableFixHead {
+    overflow-y: auto;
+    height: 500px;
+}
+.tableFixHead thead th {
+    position: sticky;
+    top: 0;
+}
+.tableFixHead tbody tr:hover {
+    background: lightgray;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+th,
+td {
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+}
+th {
+    background: #eee;
+}
+
+.loadMoreButton {
+    width: 100%;
+}
+
+
 table {
     width: 100%;
     text-align: left;
@@ -15,4 +44,27 @@ table tbody tr {
 #emailPopupModal {
     margin-left: 10vw;
     margin-right: 10vw;
+}
+.Title{
+	float: top;
+	font-family: 'Roboto', sans-serif;
+}
+
+
+#signout_button{
+	float: right;
+	margin-right: 10px;
+}
+
+
+#emailCompButton{
+	float: left;
+	margin: 10px;
+    background-color: #d3d3d3;
+    color: #000000;
+    padding: 10px;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    text-decoration: none;
 }

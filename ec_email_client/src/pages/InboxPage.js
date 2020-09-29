@@ -7,7 +7,11 @@ import {
     ModalHeader,
     ModalBody,
     ModalFooter,
+    Spinner,
 } from "reactstrap";
+import EmailComposition from "./CreateEmail.js";
+
+// TODO: implement a check to see if GAPI is loaded & signed in, if not, then load and sign in
 
 function InboxPage(props) {
     async function getMessagesIds(userId) {
@@ -118,6 +122,12 @@ function InboxPage(props) {
         return atob(data);
     }
 
+    function LoadEmails() {
+        getAllMessages(emails.length += 10).then((emails) => {
+            setEmails(emails);
+        });
+    }
+
     function decodeBase64HTML(data) {
         // Replace non-url compatible chars with base64 standard chars
         if (data == undefined) {
@@ -139,6 +149,10 @@ function InboxPage(props) {
         return decodeBase64(input);
     }
 
+    function toggleCreateEmailModal() {
+        setCreateEmailModalIsOpen(!createEmailModalIsOpen);
+    }
+    const [createEmailModalIsOpen, setCreateEmailModalIsOpen] = useState(false);
     const [emails, setEmails] = useState([]);
 
     useEffect(() => {
@@ -148,26 +162,44 @@ function InboxPage(props) {
     }, []);
 
     return (
-        <Table>
-            <thead>
-                <tr>
-                    <td>
-                        <b>From</b>
-                    </td>
-                    <td>
-                        <b>Subject</b>
-                    </td>
-                    <td>
-                        <b>Message</b>
-                    </td>
-                </tr>
-            </thead>
-            <tbody>
-                {emails.map((email) => {
-                    return <InboxEmailRow key={email.id} message={email} />;
-                })}
-            </tbody>
-        </Table>
+        <>
+            <button id="create_email" onClick={toggleCreateEmailModal}>
+                Compose Email
+            </button>
+
+            <CreateEmailModal
+                isOpen={createEmailModalIsOpen}
+                toggle={toggleCreateEmailModal}
+            />
+            <div class="tableFixHead">
+                <Table>
+                    <thead>
+                        <tr>
+                            <td>
+                                <b>From</b>
+                            </td>
+                            <td>
+                                <b>Subject</b>
+                            </td>
+                            <td>
+                                <b>Message</b>
+                            </td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {emails.map((email) => {
+                            return <InboxEmailRow key={email.id} message={email} />;
+                        })}
+                        {<button class="loadMoreButton" onClick={LoadEmails}>Load More</button>}
+                    </tbody>
+                </Table>
+            </div>
+            {emails.length == 0 && (
+                <div style={{ "text-align": "center" }}>
+                    <Spinner color="primary" />
+                </div>
+            )}
+        </>
     );
 }
 
@@ -183,8 +215,8 @@ function InboxEmailRow(props) {
     }
 
     let from = props.message.from.split(" <")[0];
-    if (from.split(" <")[0].length > 30) {
-        subject = from.substring(0, 30) + "...";
+    if (from.length > 30) {
+        from = from.substring(0, 30) + "...";
     }
 
     let subject = props.message.subject;
@@ -217,6 +249,7 @@ function InboxEmailRow(props) {
 
 function ViewEmailModal(props) {
     // Modal docs https://reactstrap.github.io/components/modals/
+    // console.log(props.email);
     return (
         <Modal
             isOpen={props.modalIsOpen}
@@ -233,9 +266,16 @@ function ViewEmailModal(props) {
                 <br />
                 <b>Subject:</b> {props.email.subject}
                 <hr />
-                <div
-                    dangerouslySetInnerHTML={{ __html: props.email.bodyHTML }}
-                />
+                {props.email.bodyHTML !== "null" && (
+                    <div
+                        dangerouslySetInnerHTML={{
+                            __html: props.email.bodyHTML,
+                        }}
+                    />
+                )}
+                {props.email.bodyHTML === "null" && (
+                    <div>{props.email.bodyText}</div>
+                )}
                 <br />
             </ModalBody>
             <ModalFooter>
@@ -249,6 +289,17 @@ function ViewEmailModal(props) {
                     Cancel
                 </Button>
             </ModalFooter>
+        </Modal>
+    );
+}
+
+function CreateEmailModal(props) {
+    return (
+        <Modal isOpen={props.isOpen} toggle={props.toggle} id="emailPopupModal">
+            <ModalHeader toggle={props.toggle}>Create Email</ModalHeader>
+            <ModalBody>
+                <EmailComposition toggle={props.toggle} />
+            </ModalBody>
         </Modal>
     );
 }
