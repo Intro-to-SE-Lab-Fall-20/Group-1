@@ -22,6 +22,7 @@ function InboxPage(props) {
             window.gapi.client.gmail.users.messages
                 .list({
                     userId: userId,
+                    q: searchTerm,
                 })
                 .then(function (response) {
                     resolve(response.result.messages);
@@ -154,19 +155,43 @@ function InboxPage(props) {
     }
     const [createEmailModalIsOpen, setCreateEmailModalIsOpen] = useState(false);
     const [emails, setEmails] = useState([]);
+    const [searchTerm, setSearchTerm] = useState(null);
 
     useEffect(() => {
         getAllMessages(10).then((emails) => {
             setEmails(emails);
         });
-    }, []);
+    }, [searchTerm]);
+
+    function handelSubmit(event){
+        getAllMessages(10);
+        event.preventDefault();
+    }
+    function handelReset(event){
+        setSearchTerm(null);
+        getAllMessages(10);
+        event.preventDefault();
+    }
+
+    function Search(){
+        return(
+            <div>
+                <form onSubmit={e => handelSubmit(e)}>
+                    <input type="text" value={searchTerm} onBlur={e => setSearchTerm(e.target.value)} />
+                    <input type="submit" value="Submit" />
+                    <button type="button" onClick={e => handelReset(e)}>Reset</button>
+                </form>
+
+            </div>
+        )
+    }   
 
     return (
         <>
             <button id="create_email" onClick={toggleCreateEmailModal}>
                 Compose Email
             </button>
-
+            <Search></Search>
             <CreateEmailModal
                 isOpen={createEmailModalIsOpen}
                 toggle={toggleCreateEmailModal}
