@@ -1,4 +1,4 @@
 language: node_js
 node_js:
   - 12
-script: npm --prefix .\ec_email_client\ run test -- --watchAll=false
+script: npm --prefix ./ec_email_client/ run test -- --watchAll=false
