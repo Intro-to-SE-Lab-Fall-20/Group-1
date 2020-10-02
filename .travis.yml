@@ -1,3 +1,4 @@
-sudo: required
-script:
-  - cd ec_email_client; npm run test -- --watchAll=false;
+language: node_js
+node_js:
+  - 7
+script: npm test
