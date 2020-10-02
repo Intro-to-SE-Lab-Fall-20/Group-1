@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { renderToString } from "react-dom/server";
 import Alert from "react-bootstrap/Alert";
 import "./CreateEmail.css";
 
@@ -11,9 +12,33 @@ class EmailComposition extends React.Component {
             message: "",
             cc: "",
             date: new Date(),
-            file: '',
-            file64: ''
+            file: "",
+            file64: "",
         };
+
+        // Formats fields if it is a reply
+        if (this.props.reply) {
+            let recipientField = this.props.replyMessage.from.split("<")[1];
+            recipientField = recipientField.substring(
+                0,
+                recipientField.length - 1
+            );
+
+            this.state = {
+                recipient: recipientField,
+                subject: "Re: " + this.props.replyMessage.subject,
+                message: "",
+                cc: "",
+                date: new Date(),
+            };
+
+            // Puts cursor at top of message box instead of bottom beneath the reply message.
+            setTimeout(() => {
+                let textBox = document.getElementsByTagName("textarea")[0];
+                textBox.focus();
+                textBox.selectionEnd = 0;
+            }, 500);
+        }
     }
 
     // All funcitons to handle changes
@@ -35,27 +60,26 @@ class EmailComposition extends React.Component {
 
     onFileChange(event) {
         //Only update to file if initializing, not cancelling attachment
-        if(event.target.value.length != 0){
-            this.setState({file: event.target.files[0]});
+        if (event.target.value.length != 0) {
+            this.setState({ file: event.target.files[0] });
             let file1 = event.target.files[0];
-            if(this.validateAttachment(file1) == false){
-                event.target.value = '';
+            if (this.validateAttachment(file1) == false) {
+                event.target.value = "";
             }
 
             //Encode Attachment to base 64
             this.getBase64(file1, (result) => {
                 var file64a = result;
-                var file64b = result.split('base64,')[1];
+                var file64b = result.split("base64,")[1];
                 //console.log(file64);
-                this.setState({file64: file64b});
+                this.setState({ file64: file64b });
             });
         }
         //No file was chosen, reset values
-        else{
-            this.setState({file: '', file64: ''});
-            event.target.value = '';
+        else {
+            this.setState({ file: "", file64: "" });
+            event.target.value = "";
         }
-
     }
 
     //Need to keep original file data, but also must encode to send
@@ -63,19 +87,18 @@ class EmailComposition extends React.Component {
         let reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = function () {
-            cb(reader.result)
+            cb(reader.result);
         };
         reader.onerror = function (error) {
-            console.log('Error: ', error);
+            console.log("Error: ", error);
         };
     }
 
     //Testing that file size is under 25MB
-    validateAttachment(fileTest){
-        if(fileTest.size > 25000000){
+    validateAttachment(fileTest) {
+        if (fileTest.size > 25000000) {
             alert("Attachments cannot exceed 25MB");
-            this.setState({file: '',
-                           file64: ''});
+            this.setState({ file: "", file64: "" });
             return false;
         }
         return true;
@@ -89,12 +112,18 @@ class EmailComposition extends React.Component {
             this.state.subject
         ).toString("base64")}?=`;
 
+        let threadId = null;
         //PICK UP here
 
         //Split the multiple recipients's (if there are multiple) and change commas to tags
         //This solution works if a gmail address goes first???
         var toSend = this.state.recipient.replace(",", ", ");
         var CCs = this.state.cc.replace(",", ", ");
+
+        // TODO: Possible make content editable div to render HTML? Or maybe just display reply email below the text are as a div
+        // https://stackoverflow.com/questions/4705848/rendering-html-inside-textarea
+
+        // Could just make all newLines be <br /> or something?
 
         var messageParts = [
             `To: ${toSend}`,
@@ -106,12 +135,41 @@ class EmailComposition extends React.Component {
             this.state.message,
         ];
 
+        // If reply
+        if (this.props.reply) {
+            let tempSubject = `=?utf-8?B?${Buffer.from(
+                `${utf8Subject}`
+            ).toString("base64")}?=`;
+
+            console.log(this.props.replyMessage);
+            let inReplyTo = this.props.replyMessage.headers["Message-Id"];
+
+            let references = inReplyTo;
+            if (this.props.replyMessage.headers["References"]) {
+                references = `${inReplyTo},${this.props.replyMessage.headers["References"]}`;
+            }
+
+            threadId = this.props.replyMessage.threadId;
+
+            messageParts = [
+                `To: ${toSend}`,
+                "Content-Type: text/html; charset=utf-8",
+                "MIME-Version: 1.0",
+                `Subject: ${tempSubject}`,
+                `In-Reply-To: ${inReplyTo}`,
+                `Reply-To: ${this.props.replyMessage.to}`,
+                `References: ${references}`,
+                "",
+                this.state.message +
+                    "<br/><br/><hr/>" +
+                    renderToString(this.displayReplyEmail()),
+            ];
+        }
 
         //If the email has an attachment, it needs to use the multipart structure
         if (this.state.file != "") {
-
             var messageParts = [
-                `Content-Type: multipart/mixed; boundary="foo_bar_baz"`, 
+                `Content-Type: multipart/mixed; boundary="foo_bar_baz"`,
                 "MIME-Version: 1.0",
                 `To: ${toSend}`,
                 `CC: ${CCs}`,
@@ -131,7 +189,6 @@ class EmailComposition extends React.Component {
                 `Content-Disposition: attachment; filename="${this.state.file.name}"`,
                 this.state.file64,
                 "--foo_bar_baz",
-
             ];
         }
 
@@ -151,6 +208,7 @@ class EmailComposition extends React.Component {
                 userId: "me",
                 resource: {
                     raw: encodedMessage,
+                    threadId: threadId,
                 },
             })
             .then((result) => {
@@ -166,9 +224,45 @@ class EmailComposition extends React.Component {
     }
 
     clearForm() {
-        this.setState({ recipient: "", subject: "", message: "", cc: "", file: "", file64: ""});
+        this.setState({
+            recipient: "",
+            subject: "",
+            message: "",
+            cc: "",
+            file: "",
+            file64: "",
+        });
         this.props.toggle();
         //Need to add function that takes user back to Inbox Page here
+    }
+
+    displayReplyEmail() {
+        return (
+            <div>
+                <b>From: </b>
+                {this.props.replyMessage.from}
+                <br />
+                <b>To: </b>
+                {this.props.replyMessage.to}
+                <br />
+                <b>Subject: </b>
+                {this.props.replyMessage.subject}
+                <br />
+                <hr />
+                <br />
+                {this.props.replyMessage.bodyHTML != "null" && (
+                    <div
+                        id="replyEmailDiv"
+                        dangerouslySetInnerHTML={{
+                            __html: this.props.replyMessage.bodyHTML,
+                        }}
+                    />
+                )}
+                {this.props.replyMessage.bodyHTML == "null" &&
+                    this.props.replyMessage.bodyText}
+                <br />
+            </div>
+        );
     }
 
     render() {
@@ -229,6 +323,7 @@ class EmailComposition extends React.Component {
                             onChange={this.onMessageChange.bind(this)}
                         />
                     </div>
+                    {this.props.reply && this.displayReplyEmail()}
                     <button type="submit" className="submit-button">
                         Send Email
                     </button>
