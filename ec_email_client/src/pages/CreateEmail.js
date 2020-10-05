@@ -39,6 +39,24 @@ class EmailComposition extends React.Component {
                 textBox.selectionEnd = 0;
             }, 500);
         }
+
+        // Formats fields if it is a forward
+        if (this.props.forward) {
+            this.state = {
+                recipient: "",
+                subject: "FW: " + this.props.forwardMessage.subject,
+                message: "",
+                cc: "",
+                date: new Date(),
+            };
+
+            // Puts cursor at top of message box instead of bottom beneath the reply message.
+            setTimeout(() => {
+                let textBox = document.getElementsByTagName("textarea")[0];
+                textBox.focus();
+                textBox.selectionEnd = 0;
+            }, 500);
+        }
     }
 
     // All funcitons to handle changes
@@ -141,7 +159,6 @@ class EmailComposition extends React.Component {
                 `${utf8Subject}`
             ).toString("base64")}?=`;
 
-            console.log(this.props.replyMessage);
             let inReplyTo = this.props.replyMessage.headers["Message-Id"];
 
             let references = inReplyTo;
@@ -166,9 +183,29 @@ class EmailComposition extends React.Component {
             ];
         }
 
+        // If forward
+        if (this.props.forward) {
+            let tempSubject = `=?utf-8?B?${Buffer.from(
+                `${utf8Subject}`
+            ).toString("base64")}?=`;
+
+            messageParts = [
+                `To: ${toSend}`,
+                "Content-Type: text/html; charset=utf-8",
+                "MIME-Version: 1.0",
+                `Subject: ${tempSubject}`,
+                "",
+                this.state.message +
+                    "<br/><br/><hr/>" +
+                    renderToString(this.displayForwardEmail()),
+            ];
+        }
+
+        // TODO: See if adding an attachment to a reply messes it up??
+
         //If the email has an attachment, it needs to use the multipart structure
-        if (this.state.file != "") {
-            var messageParts = [
+        if (this.state.file && this.state.file != "") {
+            messageParts = [
                 `Content-Type: multipart/mixed; boundary="foo_bar_baz"`,
                 "MIME-Version: 1.0",
                 `To: ${toSend}`,
@@ -191,8 +228,6 @@ class EmailComposition extends React.Component {
                 "--foo_bar_baz",
             ];
         }
-
-        console.log(messageParts);
 
         const message = messageParts.join("\n");
 
@@ -265,6 +300,35 @@ class EmailComposition extends React.Component {
         );
     }
 
+    displayForwardEmail() {
+        return (
+            <div>
+                <b>From: </b>
+                {this.props.forwardMessage.from}
+                <br />
+                <b>To: </b>
+                {this.props.forwardMessage.to}
+                <br />
+                <b>Subject: </b>
+                {this.props.forwardMessage.subject}
+                <br />
+                <hr />
+                <br />
+                {this.props.forwardMessage.bodyHTML != "null" && (
+                    <div
+                        id="replyEmailDiv"
+                        dangerouslySetInnerHTML={{
+                            __html: this.props.forwardMessage.bodyHTML,
+                        }}
+                    />
+                )}
+                {this.props.forwardMessage.bodyHTML == "null" &&
+                    this.props.forwardMessage.bodyText}
+                <br />
+            </div>
+        );
+    }
+
     render() {
         return (
             <div className="EmailCreation">
@@ -324,6 +388,7 @@ class EmailComposition extends React.Component {
                         />
                     </div>
                     {this.props.reply && this.displayReplyEmail()}
+                    {this.props.forward && this.displayForwardEmail()}
                     <button type="submit" className="submit-button">
                         Send Email
                     </button>
