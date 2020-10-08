@@ -170,6 +170,7 @@ class EmailComposition extends React.Component {
 
             messageParts = [
                 `To: ${toSend}`,
+                `CC: ${CCs}`,
                 "Content-Type: text/html; charset=utf-8",
                 "MIME-Version: 1.0",
                 `Subject: ${tempSubject}`,
@@ -191,6 +192,7 @@ class EmailComposition extends React.Component {
 
             messageParts = [
                 `To: ${toSend}`,
+                `CC: ${CCs}`,
                 "Content-Type: text/html; charset=utf-8",
                 "MIME-Version: 1.0",
                 `Subject: ${tempSubject}`,
