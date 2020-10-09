@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { renderToString } from "react-dom/server";
+import { Editor } from "@tinymce/tinymce-react";
 import Alert from "react-bootstrap/Alert";
 import "./CreateEmail.css";
 
@@ -58,6 +59,11 @@ class EmailComposition extends React.Component {
         this.setState({ message: event.target.value });
     }
 
+    onEditorChange(content, editor) {
+        console.log(content);
+        // this.setState({ message: content });
+    }
+
     onFileChange(event) {
         //Only update to file if initializing, not cancelling attachment
         if (event.target.value.length != 0) {
@@ -96,11 +102,53 @@ class EmailComposition extends React.Component {
 
     //Testing that file size is under 25MB
     validateAttachment(fileTest) {
-        //List of invalid files types as defined by google 
-        var forbiddenFileTypes = ["ade", "adp", "apk", "appx", "appxbundle", "bat", "cab", "chm", "cmd", "com", "cpl", 
-                                "dll", "dmg", "exe", "hta", "ins", "isp", "iso", "jar", "js", "jse", "lib", "lnk", 
-                                "mde", "msc", "msi", "msix", "msixbundle", "msp", "mst", "nsh", "pif", "ps1", "scr", 
-                                "sct", "shb", "sys", "vb", "vbe", "vbs", "vxd", "wsc", "wsf", "wsh"];
+        //List of invalid files types as defined by google
+        var forbiddenFileTypes = [
+            "ade",
+            "adp",
+            "apk",
+            "appx",
+            "appxbundle",
+            "bat",
+            "cab",
+            "chm",
+            "cmd",
+            "com",
+            "cpl",
+            "dll",
+            "dmg",
+            "exe",
+            "hta",
+            "ins",
+            "isp",
+            "iso",
+            "jar",
+            "js",
+            "jse",
+            "lib",
+            "lnk",
+            "mde",
+            "msc",
+            "msi",
+            "msix",
+            "msixbundle",
+            "msp",
+            "mst",
+            "nsh",
+            "pif",
+            "ps1",
+            "scr",
+            "sct",
+            "shb",
+            "sys",
+            "vb",
+            "vbe",
+            "vbs",
+            "vxd",
+            "wsc",
+            "wsf",
+            "wsh",
+        ];
         if (fileTest.size > 25000000) {
             alert("Attachments cannot exceed 25MB");
             this.setState({ file: "", file64: "" });
@@ -128,6 +176,10 @@ class EmailComposition extends React.Component {
         let threadId = null;
         //PICK UP here
 
+        let messageContent = document
+            .getElementsByTagName("iframe")[3]
+            .contentWindow.document.getElementById("tinymce").innerHTML;
+
         //Split the multiple recipients's (if there are multiple) and change commas to tags
         //This solution works if a gmail address goes first???
         var toSend = this.state.recipient.replace(",", ", ");
@@ -145,7 +197,7 @@ class EmailComposition extends React.Component {
             "MIME-Version: 1.0",
             `Subject: ${utf8Subject}`,
             "",
-            this.state.message,
+            messageContent,
         ];
 
         // If reply
@@ -329,14 +381,26 @@ class EmailComposition extends React.Component {
                     <div className="form-group">
                         <label>Message: </label>
                         <br />
-                        <textarea
-                            className="form-control"
-                            rows="15"
-                            value={this.state.message}
-                            onChange={this.onMessageChange.bind(this)}
+                        <Editor
+                            apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
+                            id="TestEditor"
+                            init={{
+                                height: 500,
+                                menubar: false,
+                                plugins: [
+                                    "advlist autolink lists link image charmap print preview anchor",
+                                    "searchreplace visualblocks code fullscreen",
+                                    "insertdatetime media table paste code help wordcount",
+                                ],
+                                toolbar:
+                                    "undo redo | formatselect | bold italic backcolor | \
+                            alignleft aligncenter alignright alignjustify | \
+                            bullist numlist outdent indent | removeformat | help",
+                            }}
                         />
                     </div>
                     {this.props.reply && this.displayReplyEmail()}
+
                     <button type="submit" className="submit-button">
                         Send Email
                     </button>
