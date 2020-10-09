@@ -96,11 +96,24 @@ class EmailComposition extends React.Component {
 
     //Testing that file size is under 25MB
     validateAttachment(fileTest) {
+        //List of invalid files types as defined by google 
+        var forbiddenFileTypes = ["ade", "adp", "apk", "appx", "appxbundle", "bat", "cab", "chm", "cmd", "com", "cpl", 
+                                "dll", "dmg", "exe", "hta", "ins", "isp", "iso", "jar", "js", "jse", "lib", "lnk", 
+                                "mde", "msc", "msi", "msix", "msixbundle", "msp", "mst", "nsh", "pif", "ps1", "scr", 
+                                "sct", "shb", "sys", "vb", "vbe", "vbs", "vxd", "wsc", "wsf", "wsh"];
         if (fileTest.size > 25000000) {
             alert("Attachments cannot exceed 25MB");
             this.setState({ file: "", file64: "" });
             return false;
         }
+
+        var fileExt = fileTest.name.split(".")[1];
+        if (forbiddenFileTypes.includes(fileExt)) {
+            alert("Invalid File Type. Attachment removed.");
+            this.setState({ file: "", file64: "" });
+            return false;
+        }
+
         return true;
     }
 
