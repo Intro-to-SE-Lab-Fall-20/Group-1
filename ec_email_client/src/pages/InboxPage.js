@@ -23,7 +23,7 @@ function InboxPage(props) {
                 .list({
                     userId: userId,
                     labelIds: ["INBOX"],
-                    q: searchTerm
+                    q: searchTerm,
                 })
                 .then(function (response) {
                     resolve(response.result.messages);
@@ -89,7 +89,7 @@ function InboxPage(props) {
                     if (response.result.threadId)
                         message.threadId = response.result.threadId;
 
-                    console.log(response.result);
+                    // console.log(response.result);
 
                     // Gets all headers, turns in to dict
                     let headers = {};
@@ -137,7 +137,7 @@ function InboxPage(props) {
     }
 
     function LoadEmails() {
-        getAllMessages(emails.length += 10).then((emails) => {
+        getAllMessages((emails.length += 10)).then((emails) => {
             setEmails(emails);
         });
     }
@@ -176,28 +176,33 @@ function InboxPage(props) {
         });
     }, [searchTerm]);
 
-    function handelSubmit(event){
+    function handelSubmit(event) {
         getAllMessages(10);
         event.preventDefault();
     }
-    function handelReset(event){
+    function handelReset(event) {
         setSearchTerm(null);
         getAllMessages(10);
         event.preventDefault();
     }
 
-    function Search(){
-        return(
+    function Search() {
+        return (
             <div>
-                <form onSubmit={e => handelSubmit(e)}>
-                    <input type="text" value={searchTerm} onBlur={e => setSearchTerm(e.target.value)} />
+                <form onSubmit={(e) => handelSubmit(e)}>
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onBlur={(e) => setSearchTerm(e.target.value)}
+                    />
                     <input type="submit" value="Submit" />
-                    <button type="button" onClick={e => handelReset(e)}>Reset</button>
+                    <button type="button" onClick={(e) => handelReset(e)}>
+                        Reset
+                    </button>
                 </form>
-
             </div>
-        )
-    }   
+        );
+    }
 
     return (
         <>
@@ -226,9 +231,15 @@ function InboxPage(props) {
                     </thead>
                     <tbody>
                         {emails.map((email) => {
-                            return <InboxEmailRow key={email.id} message={email} />;
+                            return (
+                                <InboxEmailRow key={email.id} message={email} />
+                            );
                         })}
-                        {<button class="loadMoreButton" onClick={LoadEmails}>Load More</button>}
+                        {
+                            <button class="loadMoreButton" onClick={LoadEmails}>
+                                Load More
+                            </button>
+                        }
                     </tbody>
                 </Table>
             </div>

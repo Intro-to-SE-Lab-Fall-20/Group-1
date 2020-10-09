@@ -225,7 +225,7 @@ class EmailComposition extends React.Component {
                 `Reply-To: ${this.props.replyMessage.to}`,
                 `References: ${references}`,
                 "",
-                this.state.message +
+                messageContent +
                     "<br/><br/><hr/>" +
                     renderToString(this.displayReplyEmail()),
             ];
@@ -245,7 +245,7 @@ class EmailComposition extends React.Component {
                 "Content-Type: text/html; charset=utf-8",
                 "MIME-Version: 1.0",
                 "Content-Transfer-Encoding: 7bit",
-                this.state.message,
+                messageContent,
 
                 "--foo_bar_baz",
                 `Content-Type: ${this.state.file.type}`,
