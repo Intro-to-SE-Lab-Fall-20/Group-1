@@ -14,6 +14,19 @@ import EmailComposition from "./CreateEmail.js";
 // TODO: implement a check to see if GAPI is loaded & signed in, if not, then load and sign in
 
 function InboxPage(props) {
+    const [createEmailModalIsOpen, setCreateEmailModalIsOpen] = useState(false);
+    const [loadedEmails, setLoadedEmails] = useState([]);
+    const [displayedEmails, setDisplayedEmails] = useState([]);
+    const [searchTerm, setSearchTerm] = useState(null);
+    const [nextPage, setNextPage] = useState(null);
+
+    useEffect(() => {
+        getMessages().then((emails) => {
+            setLoadedEmails(emails);
+            setDisplayedEmails(emails.slice(0, displayedEmails.length + 20));
+        });
+    }, [searchTerm]);
+
     async function getMessagesIds(userId) {
         // To get userId of logged in user, give "me"
         if (userId === undefined) userId = "me";
@@ -23,9 +36,11 @@ function InboxPage(props) {
                 .list({
                     userId: userId,
                     labelIds: ["INBOX"],
-                    q: searchTerm
+                    q: searchTerm,
+                    pageToken: nextPage
                 })
                 .then(function (response) {
+                    setNextPage(response.result.nextPageToken);
                     resolve(response.result.messages);
                 });
         });
@@ -113,12 +128,12 @@ function InboxPage(props) {
         });
     }
 
-    async function getAllMessages(numOfMessages) {
+    async function getMessages() {
         // To get userId of logged in user, give "me"
         return new Promise(async (resolve, reject) => {
             let messageIds = await getMessagesIds("me");
             let messages = [];
-            for (var i = 0; i < numOfMessages; i++) {
+            for (var i = 0; i < messageIds.length; i++) {
                 try {
                     messages.push(getMessage(messageIds[i].id));
                 } catch {
@@ -136,10 +151,27 @@ function InboxPage(props) {
         return atob(data);
     }
 
+    function ScrollCheck() {
+        var tbodyElement = document.getElementById("InboxDisplay");
+        //console.log(tbodyElement.getBoundingClientRect().bottom <= window.innerHeight);
+        //console.log(tbodyElement.scrollHeight - tbodyElement.scrollTop);
+        //console.log(tbodyElement.scrollHeight);
+        console.log(tbodyElement.getBoundingClientRect().bottom == 640);
+
+        if (tbodyElement.getBoundingClientRect().bottom == 640) {
+            LoadEmails();
+        }
+    }
+
     function LoadEmails() {
-        getAllMessages(emails.length += 10).then((emails) => {
-            setEmails(emails);
-        });
+        if (displayedEmails.length + 20 < loadedEmails.length) {
+            setDisplayedEmails(loadedEmails.slice(0, displayedEmails.length + 20));
+        } else {
+            getMessages().then((emails) => {
+                setLoadedEmails(emails);
+                setDisplayedEmails(emails.slice(0, displayedEmails.length + 20));
+            });
+        }
     }
 
     function decodeBase64HTML(data) {
@@ -166,23 +198,14 @@ function InboxPage(props) {
     function toggleCreateEmailModal() {
         setCreateEmailModalIsOpen(!createEmailModalIsOpen);
     }
-    const [createEmailModalIsOpen, setCreateEmailModalIsOpen] = useState(false);
-    const [emails, setEmails] = useState([]);
-    const [searchTerm, setSearchTerm] = useState(null);
-
-    useEffect(() => {
-        getAllMessages(10).then((emails) => {
-            setEmails(emails);
-        });
-    }, [searchTerm]);
 
     function handelSubmit(event){
-        getAllMessages(10);
+        getMessages(10);
         event.preventDefault();
     }
     function handelReset(event){
         setSearchTerm(null);
-        getAllMessages(10);
+        getMessages(10);
         event.preventDefault();
     }
 
@@ -209,8 +232,8 @@ function InboxPage(props) {
                 isOpen={createEmailModalIsOpen}
                 toggle={toggleCreateEmailModal}
             />
-            <div class="tableFixHead">
-                <Table>
+            <div class="tableFixHead" onScroll={ScrollCheck}>
+                <Table id="InboxDisplay">
                     <thead>
                         <tr>
                             <td>
@@ -225,14 +248,13 @@ function InboxPage(props) {
                         </tr>
                     </thead>
                     <tbody>
-                        {emails.map((email) => {
+                        {displayedEmails.map((email) => {
                             return <InboxEmailRow key={email.id} message={email} />;
                         })}
-                        {<button class="loadMoreButton" onClick={LoadEmails}>Load More</button>}
                     </tbody>
                 </Table>
             </div>
-            {emails.length == 0 && (
+            {loadedEmails.length == 0 && (
                 <div style={{ "text-align": "center" }}>
                     <Spinner color="primary" />
                 </div>
