@@ -51,6 +51,22 @@ class EmailComposition extends React.Component {
                 textBox.selectionEnd = 0;
             }, 500);
         }
+
+        this.tinyMCEConfig = {
+            height: 500,
+            menubar: false,
+            plugins: [
+                "advlist autolink lists link image charmap print preview anchor",
+                "searchreplace visualblocks code fullscreen",
+                "insertdatetime media table paste code help wordcount",
+            ],
+            toolbar:
+                "undo redo | formatselect | bold italic backcolor | \
+    alignleft aligncenter alignright alignjustify | \
+    bullist numlist outdent indent | removeformat | help",
+        };
+
+        this.tinyMCEApiKey = "hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u";
     }
 
     // All funcitons to handle changes
@@ -68,11 +84,6 @@ class EmailComposition extends React.Component {
 
     onMessageChange(event) {
         this.setState({ message: event.target.value });
-    }
-
-    onEditorChange(content, editor) {
-        console.log(content);
-        // this.setState({ message: content });
     }
 
     onFileChange(event) {
@@ -451,65 +462,26 @@ class EmailComposition extends React.Component {
                         {this.props.reply == undefined &&
                             this.props.forward == undefined && (
                                 <Editor
-                                    apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
-                                    id="TestEditor"
-                                    init={{
-                                        height: 500,
-                                        menubar: false,
-                                        plugins: [
-                                            "advlist autolink lists link image charmap print preview anchor",
-                                            "searchreplace visualblocks code fullscreen",
-                                            "insertdatetime media table paste code help wordcount",
-                                        ],
-                                        toolbar:
-                                            "undo redo | formatselect | bold italic backcolor | \
-                            alignleft aligncenter alignright alignjustify | \
-                            bullist numlist outdent indent | removeformat | help",
-                                    }}
+                                    apiKey={this.tinyMCEApiKey}
+                                    init={this.tinyMCEConfig}
                                 />
                             )}
                         {this.props.reply && (
                             <Editor
-                                apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
-                                id="TestEditor"
+                                apiKey={this.tinyMCEApiKey}
                                 initialValue={renderToString(
                                     this.displayReplyEmail()
                                 )}
-                                init={{
-                                    height: 500,
-                                    menubar: false,
-                                    plugins: [
-                                        "advlist autolink lists link image charmap print preview anchor",
-                                        "searchreplace visualblocks code fullscreen",
-                                        "insertdatetime media table paste code help wordcount",
-                                    ],
-                                    toolbar:
-                                        "undo redo | formatselect | bold italic backcolor | \
-                            alignleft aligncenter alignright alignjustify | \
-                            bullist numlist outdent indent | removeformat | help",
-                                }}
+                                init={this.tinyMCEConfig}
                             />
                         )}
                         {this.props.forward && (
                             <Editor
-                                apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
-                                id="TestEditor"
+                                apiKey={this.tinyMCEApiKey}
                                 initialValue={renderToString(
                                     this.displayForwardEmail()
                                 )}
-                                init={{
-                                    height: 500,
-                                    menubar: false,
-                                    plugins: [
-                                        "advlist autolink lists link image charmap print preview anchor",
-                                        "searchreplace visualblocks code fullscreen",
-                                        "insertdatetime media table paste code help wordcount",
-                                    ],
-                                    toolbar:
-                                        "undo redo | formatselect | bold italic backcolor | \
-                            alignleft aligncenter alignright alignjustify | \
-                            bullist numlist outdent indent | removeformat | help",
-                                }}
+                                init={this.tinyMCEConfig}
                             />
                         )}
                     </div>
