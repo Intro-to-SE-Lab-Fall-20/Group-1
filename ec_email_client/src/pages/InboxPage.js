@@ -153,10 +153,6 @@ function InboxPage(props) {
 
     function ScrollCheck() {
         var tbodyElement = document.getElementById("InboxDisplay");
-        //console.log(tbodyElement.getBoundingClientRect().bottom <= window.innerHeight);
-        //console.log(tbodyElement.scrollHeight - tbodyElement.scrollTop);
-        //console.log(tbodyElement.scrollHeight);
-        console.log(tbodyElement.getBoundingClientRect().bottom == 640);
 
         if (tbodyElement.getBoundingClientRect().bottom == 640) {
             LoadEmails();
