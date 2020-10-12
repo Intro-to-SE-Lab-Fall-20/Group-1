@@ -32,13 +32,6 @@ class EmailComposition extends React.Component {
                 cc: "",
                 date: new Date(),
             };
-
-            // Puts cursor at top of message box instead of bottom beneath the reply message.
-            setTimeout(() => {
-                let textBox = document.getElementsByTagName("textarea")[0];
-                textBox.focus();
-                textBox.selectionEnd = 0;
-            }, 500);
         }
     }
 
@@ -225,14 +218,12 @@ class EmailComposition extends React.Component {
                 `Reply-To: ${this.props.replyMessage.to}`,
                 `References: ${references}`,
                 "",
-                messageContent +
-                    "<br/><br/><hr/>" +
-                    renderToString(this.displayReplyEmail()),
+                messageContent,
             ];
         }
 
         //If the email has an attachment, it needs to use the multipart structure
-        if (this.state.file != "") {
+        if (this.state.file && this.state.file != "") {
             var messageParts = [
                 `Content-Type: multipart/mixed; boundary="foo_bar_baz"`,
                 "MIME-Version: 1.0",
@@ -304,6 +295,9 @@ class EmailComposition extends React.Component {
     displayReplyEmail() {
         return (
             <div>
+                <br />
+                <br />
+                <hr />
                 <b>From: </b>
                 {this.props.replyMessage.from}
                 <br />
@@ -381,25 +375,49 @@ class EmailComposition extends React.Component {
                     <div className="form-group">
                         <label>Message: </label>
                         <br />
-                        <Editor
-                            apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
-                            id="TestEditor"
-                            init={{
-                                height: 500,
-                                menubar: false,
-                                plugins: [
-                                    "advlist autolink lists link image charmap print preview anchor",
-                                    "searchreplace visualblocks code fullscreen",
-                                    "insertdatetime media table paste code help wordcount",
-                                ],
-                                toolbar:
-                                    "undo redo | formatselect | bold italic backcolor | \
+                        {this.props.reply == undefined && (
+                            <Editor
+                                apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
+                                id="TestEditor"
+                                init={{
+                                    height: 500,
+                                    menubar: false,
+                                    plugins: [
+                                        "advlist autolink lists link image charmap print preview anchor",
+                                        "searchreplace visualblocks code fullscreen",
+                                        "insertdatetime media table paste code help wordcount",
+                                    ],
+                                    toolbar:
+                                        "undo redo | formatselect | bold italic backcolor | \
                             alignleft aligncenter alignright alignjustify | \
                             bullist numlist outdent indent | removeformat | help",
-                            }}
-                        />
+                                }}
+                            />
+                        )}
+                        {this.props.reply && (
+                            <Editor
+                                apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
+                                id="TestEditor"
+                                initialValue={renderToString(
+                                    this.displayReplyEmail()
+                                )}
+                                init={{
+                                    height: 500,
+                                    menubar: false,
+                                    plugins: [
+                                        "advlist autolink lists link image charmap print preview anchor",
+                                        "searchreplace visualblocks code fullscreen",
+                                        "insertdatetime media table paste code help wordcount",
+                                    ],
+                                    toolbar:
+                                        "undo redo | formatselect | bold italic backcolor | \
+                            alignleft aligncenter alignright alignjustify | \
+                            bullist numlist outdent indent | removeformat | help",
+                                }}
+                            />
+                        )}
                     </div>
-                    {this.props.reply && this.displayReplyEmail()}
+                    {/* {this.props.reply && this.displayReplyEmail()} */}
 
                     <button type="submit" className="submit-button">
                         Send Email
