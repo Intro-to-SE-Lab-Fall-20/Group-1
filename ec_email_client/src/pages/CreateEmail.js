@@ -253,9 +253,7 @@ class EmailComposition extends React.Component {
                 "MIME-Version: 1.0",
                 `Subject: ${tempSubject}`,
                 "",
-                this.state.message +
-                    "<br/><br/><hr/>" +
-                    renderToString(this.displayForwardEmail()),
+                messageContent,
             ];
         }
 
@@ -364,6 +362,9 @@ class EmailComposition extends React.Component {
     displayForwardEmail() {
         return (
             <div>
+                <br />
+                <br />
+                <hr />
                 <b>From: </b>
                 {this.props.forwardMessage.from}
                 <br />
@@ -441,25 +442,26 @@ class EmailComposition extends React.Component {
                     <div className="form-group">
                         <label>Message: </label>
                         <br />
-                        {this.props.reply == undefined && (
-                            <Editor
-                                apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
-                                id="TestEditor"
-                                init={{
-                                    height: 500,
-                                    menubar: false,
-                                    plugins: [
-                                        "advlist autolink lists link image charmap print preview anchor",
-                                        "searchreplace visualblocks code fullscreen",
-                                        "insertdatetime media table paste code help wordcount",
-                                    ],
-                                    toolbar:
-                                        "undo redo | formatselect | bold italic backcolor | \
+                        {this.props.reply == undefined &&
+                            this.props.forward == undefined && (
+                                <Editor
+                                    apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
+                                    id="TestEditor"
+                                    init={{
+                                        height: 500,
+                                        menubar: false,
+                                        plugins: [
+                                            "advlist autolink lists link image charmap print preview anchor",
+                                            "searchreplace visualblocks code fullscreen",
+                                            "insertdatetime media table paste code help wordcount",
+                                        ],
+                                        toolbar:
+                                            "undo redo | formatselect | bold italic backcolor | \
                             alignleft aligncenter alignright alignjustify | \
                             bullist numlist outdent indent | removeformat | help",
-                                }}
-                            />
-                        )}
+                                    }}
+                                />
+                            )}
                         {this.props.reply && (
                             <Editor
                                 apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
@@ -482,9 +484,29 @@ class EmailComposition extends React.Component {
                                 }}
                             />
                         )}
+                        {this.props.forward && (
+                            <Editor
+                                apiKey="hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u"
+                                id="TestEditor"
+                                initialValue={renderToString(
+                                    this.displayForwardEmail()
+                                )}
+                                init={{
+                                    height: 500,
+                                    menubar: false,
+                                    plugins: [
+                                        "advlist autolink lists link image charmap print preview anchor",
+                                        "searchreplace visualblocks code fullscreen",
+                                        "insertdatetime media table paste code help wordcount",
+                                    ],
+                                    toolbar:
+                                        "undo redo | formatselect | bold italic backcolor | \
+                            alignleft aligncenter alignright alignjustify | \
+                            bullist numlist outdent indent | removeformat | help",
+                                }}
+                            />
+                        )}
                     </div>
-                    {/* {this.props.reply && this.displayReplyEmail()}
-                    {this.props.forward && this.displayForwardEmail()} */}
                     <button type="submit" className="submit-button">
                         Send Email
                     </button>
