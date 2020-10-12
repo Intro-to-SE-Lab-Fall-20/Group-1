@@ -339,6 +339,9 @@ class EmailComposition extends React.Component {
                 <b>To: </b>
                 {this.props.replyMessage.to}
                 <br />
+                <b>Date: </b>
+                {this.props.replyMessage.date}
+                <br />
                 <b>Subject: </b>
                 {this.props.replyMessage.subject}
                 <br />
@@ -370,6 +373,9 @@ class EmailComposition extends React.Component {
                 <br />
                 <b>To: </b>
                 {this.props.forwardMessage.to}
+                <br />
+                <b>Date: </b>
+                {this.props.forwardMessage.date}
                 <br />
                 <b>Subject: </b>
                 {this.props.forwardMessage.subject}

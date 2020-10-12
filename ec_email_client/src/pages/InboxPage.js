@@ -45,6 +45,7 @@ function InboxPage(props) {
             id: "null",
             snippet: "null",
             threadId: "null",
+            date: "",
         };
 
         return new Promise((resolve, reject) => {
@@ -54,7 +55,7 @@ function InboxPage(props) {
                     id: messageId,
                 })
                 .then(function (response) {
-                    // console.log(response.result);
+                    console.log(response.result);
 
                     // If it has two payload parts
                     if (
@@ -111,6 +112,9 @@ function InboxPage(props) {
                         }
                         if (header.name === "From") {
                             message.from = header.value;
+                        }
+                        if (header.name === "Date") {
+                            message.date = header.value;
                         }
                     });
                     message.headers = headers;
@@ -361,6 +365,8 @@ function ViewEmailModal(props) {
                 <b>From:</b> {props.email.from}
                 <br />
                 <b>To:</b> {props.email.to}
+                <br />
+                <b>Date:</b> {props.email.date}
                 <br />
                 <b>Subject:</b> {props.email.subject}
                 <hr />
