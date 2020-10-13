@@ -45,6 +45,7 @@ function InboxPage(props) {
             id: "null",
             snippet: "null",
             threadId: "null",
+            date: "",
         };
 
         return new Promise((resolve, reject) => {
@@ -112,13 +113,13 @@ function InboxPage(props) {
                         if (header.name === "From") {
                             message.from = header.value;
                         }
+                        if (header.name === "Date") {
+                            message.date = header.value;
+                        }
                     });
                     message.headers = headers;
 
                     message.id = response.result.id;
-                    if (message.id == "174ebfc6321465a9")
-                        console.log(response.result);
-
                     resolve(message);
                 });
         });
@@ -362,6 +363,8 @@ function ViewEmailModal(props) {
                 <br />
                 <b>To:</b> {props.email.to}
                 <br />
+                <b>Date:</b> {props.email.date}
+                <br />
                 <b>Subject:</b> {props.email.subject}
                 <hr />
                 {props.email.bodyHTML !== "null" && (
@@ -392,7 +395,6 @@ function ViewEmailModal(props) {
 }
 
 function CreateEmailModal(props) {
-    console.log(props.replyMessage);
     return (
         <Modal isOpen={props.isOpen} toggle={props.toggle} id="emailPopupModal">
             <ModalHeader toggle={props.toggle}>Create Email</ModalHeader>
