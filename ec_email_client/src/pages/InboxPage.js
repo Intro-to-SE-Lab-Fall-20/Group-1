@@ -56,6 +56,8 @@ function InboxPage(props) {
             from: "null",
             to: "null",
             subject: "null",
+            attachmentName: "",
+            attachment: "",
             headers: {},
             id: "null",
             snippet: "null",
@@ -70,26 +72,50 @@ function InboxPage(props) {
                     id: messageId,
                 })
                 .then(function (response) {
-                    // console.log(response.result);
+                    console.log(response.result);
 
-                    // If it has two payload parts
+
+                    // We need to actually iterate through the email parts and see what they are.. [1] is not always the html piece, could be attachment
+                    var partsCounter;
                     if (
                         !!response.result.payload.parts &&
                         response.result.payload.parts.length > 1
                     ) {
-                        message.bodyText = decodeBase64HTML(
-                            response.result.payload.parts[0].body.data
-                        );
-                        message.bodyHTML = decodeBase64HTML(
-                            response.result.payload.parts[1].body.data
-                        );
+                        // Iterate through all the message parts and check if there is a file name, and check MimeType to assign correctly  
+                        for (partsCounter = 0; partsCounter < response.result.payload.parts.length; partsCounter++){
+                            // There are many different MIME Types for attachments, just check if filename exists
+                            if (response.result.payload.parts[partsCounter].filename){
+                                message.attachmentName = 
+                                response.result.payload.parts[partsCounter].filename
+                            }
+                            if (response.result.payload.parts[partsCounter].mimeType == "text/html"){
+                                message.bodyHTML = decodeBase64HTML(
+                                    response.result.payload.parts[partsCounter].body.data
+                                );
+                            }
+                            if (response.result.payload.parts[partsCounter].mimeType == "text/plain"){
+                                message.bodyText = decodeBase64HTML(
+                                    response.result.payload.parts[partsCounter].body.data
+                                );
+                            }
+                        }
+
+
                     } else if (
                         !!response.result.payload.body &&
                         !!response.result.payload.body.data
                     ) {
-                        message.bodyText = decodeBase64HTML(
-                            response.result.payload.body.data
-                        );
+                        if (response.result.payload.mimeType == "text/plain") {
+                            message.bodyText = decodeBase64HTML(
+                                response.result.payload.body.data
+                            );
+                        }
+
+                        else if (response.result.payload.mimeType == "text/html") {
+                            message.bodyHTML = decodeBase64HTML(
+                                response.result.payload.body.data
+                            );
+                        }
 
                         // Checks if HTML was put in body.data
                         if (
@@ -137,6 +163,7 @@ function InboxPage(props) {
                     message.id = response.result.id;
                     resolve(message);
                 });
+
         });
     }
 
@@ -379,6 +406,8 @@ function ViewEmailModal(props) {
                 <b>Date:</b> {props.email.date}
                 <br />
                 <b>Subject:</b> {props.email.subject}
+                <br />
+                <b>Attachment:</b> {props.email.attachmentName}
                 <hr />
                 {props.email.bodyHTML !== "null" && (
                     <div
