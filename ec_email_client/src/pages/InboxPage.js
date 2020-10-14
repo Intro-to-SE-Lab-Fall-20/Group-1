@@ -46,6 +46,17 @@ function InboxPage(props) {
         });
     }
 
+    async function getAttachmentData(messageID, parts){
+        var attachId = parts.body.attachmentId;
+        var request = window.gapi.client.gmail.users.messages.attachments
+            .get({
+                'id': attachId,
+                'messageId': messageID,
+                'userId': 'me'
+            });
+        return request;
+    }
+
     async function getMessage(messageId) {
         // https://developers.google.com/gmail/api/reference/rest/v1/users.messages.attachments#MessagePartBody
         // console.log("Getting specific message for " + messageId);
@@ -56,7 +67,7 @@ function InboxPage(props) {
             from: "null",
             to: "null",
             subject: "null",
-            attachmentName: "",
+            attachmentName: "null",
             attachment: "",
             headers: {},
             id: "null",
@@ -72,7 +83,7 @@ function InboxPage(props) {
                     id: messageId,
                 })
                 .then(function (response) {
-                    console.log(response.result);
+                    //console.log(response.result);
 
 
                     // We need to actually iterate through the email parts and see what they are.. [1] is not always the html piece, could be attachment
@@ -86,7 +97,13 @@ function InboxPage(props) {
                             // There are many different MIME Types for attachments, just check if filename exists
                             if (response.result.payload.parts[partsCounter].filename){
                                 message.attachmentName = 
-                                response.result.payload.parts[partsCounter].filename
+                                response.result.payload.parts[partsCounter].filename;
+
+                                var MessageData = getAttachmentData(messageId, response.result.payload.parts[partsCounter]);
+                                MessageData.then(function (result){
+                                    console.log(result);
+                                    message.attachment = result.body.data;
+                                })
                             }
                             if (response.result.payload.parts[partsCounter].mimeType == "text/html"){
                                 message.bodyHTML = decodeBase64HTML(
@@ -338,6 +355,10 @@ function InboxEmailRow(props) {
         console.log("Should be forwarding");
     }
 
+    function downloadAttachment() {
+        console.log(props.email.attachmentName);
+    }
+
     let from = props.message.from.split(" <")[0];
     if (from.length > 30) {
         from = from.substring(0, 30) + "...";
@@ -368,6 +389,7 @@ function InboxEmailRow(props) {
                 email={props.message}
                 replyFunction={setupReply}
                 forwardFunction={setupForward}
+                downloadFunction={downloadAttachment}
             />
             <CreateEmailModal
                 isOpen={forwardEmailModalIsOpen}
@@ -407,7 +429,14 @@ function ViewEmailModal(props) {
                 <br />
                 <b>Subject:</b> {props.email.subject}
                 <br />
-                <b>Attachment:</b> {props.email.attachmentName}
+                {props.email.attachmentName !== "null" && (
+                    <div><b>Attachment: </b>{props.email.attachmentName} <br />
+                    <Button color="success" onClick={props.downloadFunction}>
+                        Download Attachment
+                    </Button>{" "}
+                    <a id="download-attach" download="{props.email.attachmentName}"> Download Attachment </a>
+                    </div>
+                )}
                 <hr />
                 {props.email.bodyHTML !== "null" && (
                     <div
