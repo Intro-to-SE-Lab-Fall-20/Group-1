@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { renderToString } from "react-dom/server";
+import { Editor } from "@tinymce/tinymce-react";
 import Alert from "react-bootstrap/Alert";
 import "./CreateEmail.css";
 
@@ -31,6 +32,17 @@ class EmailComposition extends React.Component {
                 cc: "",
                 date: new Date(),
             };
+        }
+
+        // Formats fields if it is a forward
+        if (this.props.forward) {
+            this.state = {
+                recipient: "",
+                subject: "FW: " + this.props.forwardMessage.subject,
+                message: "",
+                cc: "",
+                date: new Date(),
+            };
 
             // Puts cursor at top of message box instead of bottom beneath the reply message.
             setTimeout(() => {
@@ -39,6 +51,22 @@ class EmailComposition extends React.Component {
                 textBox.selectionEnd = 0;
             }, 500);
         }
+
+        this.tinyMCEConfig = {
+            height: 500,
+            menubar: false,
+            plugins: [
+                "advlist autolink lists link image charmap print preview anchor",
+                "searchreplace visualblocks code fullscreen",
+                "insertdatetime media table paste code help wordcount",
+            ],
+            toolbar:
+                "undo redo | formatselect | bold italic backcolor | \
+    alignleft aligncenter alignright alignjustify | \
+    bullist numlist outdent indent | removeformat | help",
+        };
+
+        this.tinyMCEApiKey = "hxj846tk7ebu40f3mb6v7rjyn6dvort4mlavnl88uvld968u";
     }
 
     // All funcitons to handle changes
@@ -96,11 +124,53 @@ class EmailComposition extends React.Component {
 
     //Testing that file size is under 25MB
     validateAttachment(fileTest) {
-        //List of invalid files types as defined by google 
-        var forbiddenFileTypes = ["ade", "adp", "apk", "appx", "appxbundle", "bat", "cab", "chm", "cmd", "com", "cpl", 
-                                "dll", "dmg", "exe", "hta", "ins", "isp", "iso", "jar", "js", "jse", "lib", "lnk", 
-                                "mde", "msc", "msi", "msix", "msixbundle", "msp", "mst", "nsh", "pif", "ps1", "scr", 
-                                "sct", "shb", "sys", "vb", "vbe", "vbs", "vxd", "wsc", "wsf", "wsh"];
+        //List of invalid files types as defined by google
+        var forbiddenFileTypes = [
+            "ade",
+            "adp",
+            "apk",
+            "appx",
+            "appxbundle",
+            "bat",
+            "cab",
+            "chm",
+            "cmd",
+            "com",
+            "cpl",
+            "dll",
+            "dmg",
+            "exe",
+            "hta",
+            "ins",
+            "isp",
+            "iso",
+            "jar",
+            "js",
+            "jse",
+            "lib",
+            "lnk",
+            "mde",
+            "msc",
+            "msi",
+            "msix",
+            "msixbundle",
+            "msp",
+            "mst",
+            "nsh",
+            "pif",
+            "ps1",
+            "scr",
+            "sct",
+            "shb",
+            "sys",
+            "vb",
+            "vbe",
+            "vbs",
+            "vxd",
+            "wsc",
+            "wsf",
+            "wsh",
+        ];
         if (fileTest.size > 25000000) {
             alert("Attachments cannot exceed 25MB");
             this.setState({ file: "", file64: "" });
@@ -128,6 +198,10 @@ class EmailComposition extends React.Component {
         let threadId = null;
         //PICK UP here
 
+        let messageContent = document
+            .getElementsByTagName("iframe")[3]
+            .contentWindow.document.getElementById("tinymce").innerHTML;
+
         //Split the multiple recipients's (if there are multiple) and change commas to tags
         //This solution works if a gmail address goes first???
         var toSend = this.state.recipient.replace(",", ", ");
@@ -145,7 +219,7 @@ class EmailComposition extends React.Component {
             "MIME-Version: 1.0",
             `Subject: ${utf8Subject}`,
             "",
-            this.state.message,
+            messageContent,
         ];
 
         // If reply
@@ -154,7 +228,6 @@ class EmailComposition extends React.Component {
                 `${utf8Subject}`
             ).toString("base64")}?=`;
 
-            console.log(this.props.replyMessage);
             let inReplyTo = this.props.replyMessage.headers["Message-Id"];
 
             let references = inReplyTo;
@@ -166,6 +239,7 @@ class EmailComposition extends React.Component {
 
             messageParts = [
                 `To: ${toSend}`,
+                `CC: ${CCs}`,
                 "Content-Type: text/html; charset=utf-8",
                 "MIME-Version: 1.0",
                 `Subject: ${tempSubject}`,
@@ -173,15 +247,32 @@ class EmailComposition extends React.Component {
                 `Reply-To: ${this.props.replyMessage.to}`,
                 `References: ${references}`,
                 "",
-                this.state.message +
-                    "<br/><br/><hr/>" +
-                    renderToString(this.displayReplyEmail()),
+                messageContent,
             ];
         }
 
+        // If forward
+        if (this.props.forward) {
+            let tempSubject = `=?utf-8?B?${Buffer.from(
+                `${utf8Subject}`
+            ).toString("base64")}?=`;
+
+            messageParts = [
+                `To: ${toSend}`,
+                `CC: ${CCs}`,
+                "Content-Type: text/html; charset=utf-8",
+                "MIME-Version: 1.0",
+                `Subject: ${tempSubject}`,
+                "",
+                messageContent,
+            ];
+        }
+
+        // TODO: See if adding an attachment to a reply messes it up??
+
         //If the email has an attachment, it needs to use the multipart structure
-        if (this.state.file != "") {
-            var messageParts = [
+        if (this.state.file && this.state.file != "") {
+            messageParts = [
                 `Content-Type: multipart/mixed; boundary="foo_bar_baz"`,
                 "MIME-Version: 1.0",
                 `To: ${toSend}`,
@@ -193,7 +284,7 @@ class EmailComposition extends React.Component {
                 "Content-Type: text/html; charset=utf-8",
                 "MIME-Version: 1.0",
                 "Content-Transfer-Encoding: 7bit",
-                this.state.message,
+                messageContent,
 
                 "--foo_bar_baz",
                 `Content-Type: ${this.state.file.type}`,
@@ -204,8 +295,6 @@ class EmailComposition extends React.Component {
                 "--foo_bar_baz",
             ];
         }
-
-        console.log(messageParts);
 
         const message = messageParts.join("\n");
 
@@ -252,11 +341,17 @@ class EmailComposition extends React.Component {
     displayReplyEmail() {
         return (
             <div>
+                <br />
+                <br />
+                <hr />
                 <b>From: </b>
                 {this.props.replyMessage.from}
                 <br />
                 <b>To: </b>
                 {this.props.replyMessage.to}
+                <br />
+                <b>Date: </b>
+                {this.props.replyMessage.date}
                 <br />
                 <b>Subject: </b>
                 {this.props.replyMessage.subject}
@@ -273,6 +368,41 @@ class EmailComposition extends React.Component {
                 )}
                 {this.props.replyMessage.bodyHTML == "null" &&
                     this.props.replyMessage.bodyText}
+                <br />
+            </div>
+        );
+    }
+
+    displayForwardEmail() {
+        return (
+            <div>
+                <br />
+                <br />
+                <hr />
+                <b>From: </b>
+                {this.props.forwardMessage.from}
+                <br />
+                <b>To: </b>
+                {this.props.forwardMessage.to}
+                <br />
+                <b>Date: </b>
+                {this.props.forwardMessage.date}
+                <br />
+                <b>Subject: </b>
+                {this.props.forwardMessage.subject}
+                <br />
+                <hr />
+                <br />
+                {this.props.forwardMessage.bodyHTML != "null" && (
+                    <div
+                        id="replyEmailDiv"
+                        dangerouslySetInnerHTML={{
+                            __html: this.props.forwardMessage.bodyHTML,
+                        }}
+                    />
+                )}
+                {this.props.forwardMessage.bodyHTML == "null" &&
+                    this.props.forwardMessage.bodyText}
                 <br />
             </div>
         );
@@ -329,14 +459,32 @@ class EmailComposition extends React.Component {
                     <div className="form-group">
                         <label>Message: </label>
                         <br />
-                        <textarea
-                            className="form-control"
-                            rows="15"
-                            value={this.state.message}
-                            onChange={this.onMessageChange.bind(this)}
-                        />
+                        {this.props.reply == undefined &&
+                            this.props.forward == undefined && (
+                                <Editor
+                                    apiKey={this.tinyMCEApiKey}
+                                    init={this.tinyMCEConfig}
+                                />
+                            )}
+                        {this.props.reply && (
+                            <Editor
+                                apiKey={this.tinyMCEApiKey}
+                                initialValue={renderToString(
+                                    this.displayReplyEmail()
+                                )}
+                                init={this.tinyMCEConfig}
+                            />
+                        )}
+                        {this.props.forward && (
+                            <Editor
+                                apiKey={this.tinyMCEApiKey}
+                                initialValue={renderToString(
+                                    this.displayForwardEmail()
+                                )}
+                                init={this.tinyMCEConfig}
+                            />
+                        )}
                     </div>
-                    {this.props.reply && this.displayReplyEmail()}
                     <button type="submit" className="submit-button">
                         Send Email
                     </button>

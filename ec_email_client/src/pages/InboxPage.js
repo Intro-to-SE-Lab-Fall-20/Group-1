@@ -60,6 +60,7 @@ function InboxPage(props) {
             id: "null",
             snippet: "null",
             threadId: "null",
+            date: "",
         };
 
         return new Promise((resolve, reject) => {
@@ -89,6 +90,16 @@ function InboxPage(props) {
                         message.bodyText = decodeBase64HTML(
                             response.result.payload.body.data
                         );
+
+                        // Checks if HTML was put in body.data
+                        if (
+                            message.bodyText
+                                .substr(0, 10)
+                                .toLowerCase()
+                                .includes("html")
+                        ) {
+                            message.bodyHTML = message.bodyText;
+                        }
                     } else {
                         console.log(
                             "Failed getting message body for:",
@@ -104,8 +115,6 @@ function InboxPage(props) {
                     if (response.result.threadId)
                         message.threadId = response.result.threadId;
 
-                    console.log(response.result);
-
                     // Gets all headers, turns in to dict
                     let headers = {};
                     response.result.payload.headers.forEach((header) => {
@@ -118,6 +127,9 @@ function InboxPage(props) {
                         }
                         if (header.name === "From") {
                             message.from = header.value;
+                        }
+                        if (header.name === "Date") {
+                            message.date = header.value;
                         }
                     });
                     message.headers = headers;
@@ -196,27 +208,33 @@ function InboxPage(props) {
     }
 
     function handelSubmit(event){
-        getMessages(10);
+        getMessages();
         event.preventDefault();
     }
-    function handelReset(event){
+
+    function handelReset(event) {
         setSearchTerm(null);
-        getMessages(10);
+        getMessages();
         event.preventDefault();
     }
 
-    function Search(){
-        return(
+    function Search() {
+        return (
             <div>
-                <form onSubmit={e => handelSubmit(e)}>
-                    <input type="text" value={searchTerm} onBlur={e => setSearchTerm(e.target.value)} />
+                <form onSubmit={(e) => handelSubmit(e)}>
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onBlur={(e) => setSearchTerm(e.target.value)}
+                    />
                     <input type="submit" value="Submit" />
-                    <button type="button" onClick={e => handelReset(e)}>Reset</button>
+                    <button type="button" onClick={(e) => handelReset(e)}>
+                        Reset
+                    </button>
                 </form>
-
             </div>
-        )
-    }   
+        );
+    }
 
     return (
         <>
@@ -247,6 +265,16 @@ function InboxPage(props) {
                         {displayedEmails.map((email) => {
                             return <InboxEmailRow key={email.id} message={email} />;
                         })}
+                        {emails.map((email) => {
+                            return (
+                                <InboxEmailRow key={email.id} message={email} />
+                            );
+                        })}
+                        {
+                            <button class="loadMoreButton" onClick={LoadEmails}>
+                                Load More
+                            </button>
+                        }
                     </tbody>
                 </Table>
             </div>
@@ -270,14 +298,27 @@ function InboxEmailRow(props) {
         setModalIsOpen(!modalIsOpen);
     }
 
-    const [createEmailModalIsOpen, setCreateEmailModalIsOpen] = useState(false);
-    function toggleCreateEmailModal() {
-        setCreateEmailModalIsOpen(!createEmailModalIsOpen);
+    const [replyEmailModalIsOpen, setReplyEmailModalIsOpen] = useState(false);
+    function toggleReplyEmailModal() {
+        setReplyEmailModalIsOpen(!replyEmailModalIsOpen);
+    }
+    const [forwardEmailModalIsOpen, setForwardEmailModalIsOpen] = useState(
+        false
+    );
+    function toggleForwardEmailModal() {
+        setForwardEmailModalIsOpen(!forwardEmailModalIsOpen);
     }
 
     function setupReply() {
         setModalIsOpen(false);
-        setCreateEmailModalIsOpen(true);
+        setReplyEmailModalIsOpen(true);
+        console.log("Should be replying");
+    }
+
+    function setupForward() {
+        setModalIsOpen(false);
+        setForwardEmailModalIsOpen(true);
+        console.log("Should be forwarding");
     }
 
     let from = props.message.from.split(" <")[0];
@@ -309,10 +350,17 @@ function InboxEmailRow(props) {
                 toggleModalOpen={toggleModalOpen}
                 email={props.message}
                 replyFunction={setupReply}
+                forwardFunction={setupForward}
             />
             <CreateEmailModal
-                isOpen={createEmailModalIsOpen}
-                toggle={toggleCreateEmailModal}
+                isOpen={forwardEmailModalIsOpen}
+                toggle={toggleForwardEmailModal}
+                forward={true}
+                forwardMessage={props.message}
+            />
+            <CreateEmailModal
+                isOpen={replyEmailModalIsOpen}
+                toggle={toggleReplyEmailModal}
                 reply={true}
                 replyMessage={props.message}
             />
@@ -323,8 +371,6 @@ function InboxEmailRow(props) {
 function ViewEmailModal(props) {
     // Modal docs https://reactstrap.github.io/components/modals/
     // console.log(props.email);
-
-    function triggerEmailReply() {}
 
     return (
         <Modal
@@ -339,6 +385,8 @@ function ViewEmailModal(props) {
                 <b>From:</b> {props.email.from}
                 <br />
                 <b>To:</b> {props.email.to}
+                <br />
+                <b>Date:</b> {props.email.date}
                 <br />
                 <b>Subject:</b> {props.email.subject}
                 <hr />
@@ -358,7 +406,7 @@ function ViewEmailModal(props) {
                 <Button color="primary" onClick={props.replyFunction}>
                     Reply
                 </Button>{" "}
-                <Button color="primary" onClick={props.toggleModalOpen}>
+                <Button color="primary" onClick={props.forwardFunction}>
                     Forward
                 </Button>{" "}
                 <Button color="secondary" onClick={props.toggleModalOpen}>
@@ -378,6 +426,8 @@ function CreateEmailModal(props) {
                     toggle={props.toggle}
                     reply={props.reply}
                     replyMessage={props.replyMessage}
+                    forward={props.forward}
+                    forwardMessage={props.forwardMessage}
                 />
             </ModalBody>
         </Modal>
