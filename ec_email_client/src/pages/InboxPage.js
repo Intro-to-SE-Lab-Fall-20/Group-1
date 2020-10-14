@@ -265,16 +265,6 @@ function InboxPage(props) {
                         {displayedEmails.map((email) => {
                             return <InboxEmailRow key={email.id} message={email} />;
                         })}
-                        {emails.map((email) => {
-                            return (
-                                <InboxEmailRow key={email.id} message={email} />
-                            );
-                        })}
-                        {
-                            <button class="loadMoreButton" onClick={LoadEmails}>
-                                Load More
-                            </button>
-                        }
                     </tbody>
                 </Table>
             </div>
