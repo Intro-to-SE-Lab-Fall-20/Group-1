@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import logo from "./logo.svg";
 import LoginPage from "./pages/LoginPage";
-import InboxPage from "./pages/InboxPage";
 import EmailComposition from "./pages/CreateEmail.js";
+import InboxPageComponent from './components/InboxPageComponent.js';
 import { Spinner } from "reactstrap";
 import "./App.css";
 // TODO: Have login functions passed as props so each page can check for sign ins and handle them
@@ -151,7 +151,7 @@ function App() {
             <div className="Title">EC Email Client</div>
             <button id="signout_button">Sign Out</button>
             {currentPage == "Login" && !loadingGapi && <LoginPage />}
-            {currentPage == "Inbox" && <InboxPage />}
+            {currentPage == "Inbox" && <InboxPageComponent />}
             {!signedIn && loadingGapi && <Spinner color="primary" />}
         </div>
     );
