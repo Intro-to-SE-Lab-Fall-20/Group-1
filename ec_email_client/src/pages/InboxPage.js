@@ -95,50 +95,55 @@ function InboxPage(props) {
                         response.result.payload.parts.length > 1
                     ) {
                         // Iterate through all the message parts and check if there is a file name, and check MimeType to assign correctly  
-                        for (partsCounter = 0; partsCounter < response.result.payload.parts.length; partsCounter++){
+                        for (partsCounter = 0; partsCounter < response.result.payload.parts.length; partsCounter++) {
                             
                             // There are many different MIME Types for attachments, just check if filename exists, if true, we have a file
-                            if (response.result.payload.parts[partsCounter].filename){
+                            if (response.result.payload.parts[partsCounter].filename) {
                                 message.attachmentName = 
-                                response.result.payload.parts[partsCounter].filename;
+                                    response.result.payload.parts[partsCounter].filename;
 
                                 //Need to check for mime type so download works correctly
                                 var mimeTypeCheck = response.result.payload.parts[partsCounter].mimeType;
 
+                                //Must build correct .attachment format for download function
                                 var MessageData = getAttachmentData(messageId, response.result.payload.parts[partsCounter]);
                                 MessageData.then(function (result){
                                     message.attachment = 'data:'+mimeTypeCheck+';base64,'+result.result.data;
                                 });
                             }
-                            if (response.result.payload.parts[partsCounter].mimeType == "text/html"){
+                            //We still need to properly assign part to correct piece of email based on mime type
+                            if (response.result.payload.parts[partsCounter].mimeType == "text/html") {
                                 message.bodyHTML = decodeBase64HTML(
                                     response.result.payload.parts[partsCounter].body.data
                                 );
                             }
-                            if (response.result.payload.parts[partsCounter].mimeType == "text/plain"){
+                            if (response.result.payload.parts[partsCounter].mimeType == "text/plain") {
                                 message.bodyText = decodeBase64HTML(
                                     response.result.payload.parts[partsCounter].body.data
                                 );
                             }
                         }
 
-
+                    // If message only has one (1) part, properly assign its data to corresponding piece 
                     } else if (
                         !!response.result.payload.body &&
                         !!response.result.payload.body.data
                     ) {
-                        // Message only has one part, but we need to assign to bodyText/bodyHTML correctly based on mimeType
-                        if (response.result.payload.mimeType == "text/plain") {
-                            message.bodyText = decodeBase64HTML(
-                                response.result.payload.body.data
-                            );
+
+                        switch (response.result.payload.mimeType) {
+                            case ("text/plain"):
+                                message.bodyText = decodeBase64HTML(
+                                    response.result.payload.body.data
+                                );
+                                break;
+
+                            case ("text/html"):
+                                message.bodyHTML = decodeBase64HTML(
+                                    response.result.payload.body.data
+                                );
+                                break;
                         }
-                        
-                        else if (response.result.payload.mimeType == "text/html") {
-                            message.bodyHTML = decodeBase64HTML(
-                                response.result.payload.body.data
-                            );
-                        }
+
 
                         // Checks if HTML was put in body.data
                         if (
