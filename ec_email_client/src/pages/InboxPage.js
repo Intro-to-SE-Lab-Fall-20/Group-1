@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Base64Downloader from 'react-base64-downloader';
 import "./InboxPage.css";
 import {
     Table,
