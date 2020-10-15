@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Base64Downloader from 'react-base64-downloader';
 import "./InboxPage.css";
 import {
     Table,
@@ -46,6 +47,7 @@ function InboxPage(props) {
         });
     }
 
+    // Call to API to get data about the attachment 
     async function getAttachmentData(messageID, parts){
         var attachId = parts.body.attachmentId;
         var request = window.gapi.client.gmail.users.messages.attachments
@@ -86,7 +88,7 @@ function InboxPage(props) {
                     //console.log(response.result);
 
 
-                    // We need to actually iterate through the email parts and see what they are.. [1] is not always the html piece, could be attachment
+                    // We need to actually iterate through the email parts and see what they are and properly assign them 
                     var partsCounter;
                     if (
                         !!response.result.payload.parts &&
@@ -94,16 +96,19 @@ function InboxPage(props) {
                     ) {
                         // Iterate through all the message parts and check if there is a file name, and check MimeType to assign correctly  
                         for (partsCounter = 0; partsCounter < response.result.payload.parts.length; partsCounter++){
-                            // There are many different MIME Types for attachments, just check if filename exists
+                            
+                            // There are many different MIME Types for attachments, just check if filename exists, if true, we have a file
                             if (response.result.payload.parts[partsCounter].filename){
                                 message.attachmentName = 
                                 response.result.payload.parts[partsCounter].filename;
 
+                                //Need to check for mime type so download works correctly
+                                var mimeTypeCheck = response.result.payload.parts[partsCounter].mimeType;
+
                                 var MessageData = getAttachmentData(messageId, response.result.payload.parts[partsCounter]);
                                 MessageData.then(function (result){
-                                    console.log(result);
-                                    message.attachment = result.body.data;
-                                })
+                                    message.attachment = 'data:'+mimeTypeCheck+';base64,'+result.result.data;
+                                });
                             }
                             if (response.result.payload.parts[partsCounter].mimeType == "text/html"){
                                 message.bodyHTML = decodeBase64HTML(
@@ -122,12 +127,13 @@ function InboxPage(props) {
                         !!response.result.payload.body &&
                         !!response.result.payload.body.data
                     ) {
+                        // Message only has one part, but we need to assign to bodyText/bodyHTML correctly based on mimeType
                         if (response.result.payload.mimeType == "text/plain") {
                             message.bodyText = decodeBase64HTML(
                                 response.result.payload.body.data
                             );
                         }
-
+                        
                         else if (response.result.payload.mimeType == "text/html") {
                             message.bodyHTML = decodeBase64HTML(
                                 response.result.payload.body.data
@@ -356,7 +362,11 @@ function InboxEmailRow(props) {
     }
 
     function downloadAttachment() {
-        console.log(props.email.attachmentName);
+        let dataBase64Rep = props.message.attachment.replace(/-/g, '+').replace(/_/g, '/')
+        var attachmentForDownload = document.createElement("a");
+        attachmentForDownload.href = dataBase64Rep;
+        attachmentForDownload.download = props.message.attachmentName;
+        attachmentForDownload.click();
     }
 
     let from = props.message.from.split(" <")[0];
@@ -431,10 +441,9 @@ function ViewEmailModal(props) {
                 <br />
                 {props.email.attachmentName !== "null" && (
                     <div><b>Attachment: </b>{props.email.attachmentName} <br />
-                    <Button color="success" onClick={props.downloadFunction}>
-                        Download Attachment
-                    </Button>{" "}
-                    <a id="download-attach" download="{props.email.attachmentName}"> Download Attachment </a>
+                        <Button color="success" onClick={props.downloadFunction}>
+                            Download Attachment
+                        </Button>{" "}
                     </div>
                 )}
                 <hr />
