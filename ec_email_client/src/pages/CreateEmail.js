@@ -19,11 +19,15 @@ class EmailComposition extends React.Component {
 
         // Formats fields if it is a reply
         if (this.props.reply) {
-            let recipientField = this.props.replyMessage.from.split("<")[1];
-            recipientField = recipientField.substring(
-                0,
-                recipientField.length - 1
-            );
+            console.log(this.props.replyMessage);
+            let recipientField = this.props.replyMessage.from;
+            if (this.props.replyMessage.from.split("<").length > 1) {
+                recipientField = this.props.replyMessage.from.split("<")[1];
+                recipientField = recipientField.substring(
+                    0,
+                    recipientField.length - 1
+                );
+            }
 
             this.state = {
                 recipient: recipientField,
