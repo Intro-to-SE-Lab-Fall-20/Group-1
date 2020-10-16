@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./InboxPage.css";
 import {
     Table,
@@ -10,22 +10,45 @@ import {
     Spinner,
 } from "reactstrap";
 import EmailComposition from "./CreateEmail.js";
+import { render } from "@testing-library/react";
 
 // TODO: implement a check to see if GAPI is loaded & signed in, if not, then load and sign in
 
 function InboxPage(props) {
     const [createEmailModalIsOpen, setCreateEmailModalIsOpen] = useState(false);
-    const [loadedEmails, setLoadedEmails] = useState([]);
-    const [displayedEmails, setDisplayedEmails] = useState([]);
     const [searchTerm, setSearchTerm] = useState(null);
     const [nextPage, setNextPage] = useState(null);
+    const [loadedEmails, setLoadedEmails] = useState([]);
+    const [displayedEmails, setDisplayedEmails] = useState([]);
+    const loadedEmailsRef = useRef([]);
+    const displayedEmailsRef = useRef([]);
 
+    // Initialize emails
     useEffect(() => {
         getMessages().then((emails) => {
+            loadedEmailsRef.current = emails;
             setLoadedEmails(emails);
-            setDisplayedEmails(emails.slice(0, displayedEmails.length + 20));
+            
+            var emailsToDisplay = emails.slice(0, displayedEmails.length + 20)
+            displayedEmailsRef.current = emailsToDisplay;
+            setDisplayedEmails(emailsToDisplay);
         });
     }, [searchTerm]);
+
+    useEffect(() => {
+        refreshInbox.bind(displayedEmailsRef);
+    }, []);
+
+    // Initialize refresh (Executes every 60 seconds)
+    useEffect(() => {
+        setInterval(() => {
+            refreshInbox();
+        }, 5000);
+    }, []);
+
+    useEffect(() => {
+        console.log(displayedEmails);
+    }, [loadedEmailsRef]);
 
     async function getMessagesIds(userId) {
         // To get userId of logged in user, give "me"
@@ -213,6 +236,23 @@ function InboxPage(props) {
         });
     }
 
+    async function getLatestMessagesIds(userId) {
+        // To get userId of logged in user, give "me"
+        if (userId === undefined) userId = "me";
+
+        return new Promise((resolve, reject) => {
+            window.gapi.client.gmail.users.messages
+                .list({
+                    userId: userId,
+                    labelIds: ["INBOX"],
+                })
+                .then(function (response) {
+                    setNextPage(response.result.nextPageToken);
+                    resolve(response.result.messages);
+                });
+        });
+    }
+
     function decodeBase64(data) {
         return atob(data);
     }
@@ -220,20 +260,67 @@ function InboxPage(props) {
     function ScrollCheck() {
         var tbodyElement = document.getElementById("InboxDisplay");
 
-        if (tbodyElement.getBoundingClientRect().bottom == 640) {
+        if (tbodyElement.getBoundingClientRect().bottom.toString().includes(640)) {
             LoadEmails();
         }
+        console.log(tbodyElement.getBoundingClientRect().bottom);
     }
 
     function LoadEmails() {
         if (displayedEmails.length + 20 < loadedEmails.length) {
-            setDisplayedEmails(loadedEmails.slice(0, displayedEmails.length + 20));
+            var emailsToBeDisplayed = loadedEmails.slice(0, displayedEmails.length + 20)
+            displayedEmailsRef.current = emailsToBeDisplayed
+            setDisplayedEmails(emailsToBeDisplayed);
         } else {
             getMessages().then((emails) => {
+                loadedEmailsRef.current = emails;
                 setLoadedEmails(emails);
-                setDisplayedEmails(emails.slice(0, displayedEmails.length + 20));
+
+                var emailsToBeDisplayed = emails.slice(0, displayedEmails.length + 20);
+                displayedEmailsRef = emailsToBeDisplayed;
+                setDisplayedEmails(emails.slice(emailsToBeDisplayed));
             });
         }
+    }
+
+    async function refreshInbox() {
+        var promise = new Promise(async (resolve, reject) => {
+            let messageIds = await getLatestMessagesIds("me");
+            let newEmails = [];
+            for (var i = 0; i < 10; i++) {
+                try {
+                    var alreadyLoaded = false;
+                    loadedEmailsRef.current.forEach(loadedEmail => {
+                        if (loadedEmail.id == messageIds[i].id) {
+                            alreadyLoaded = true;
+                        }
+                    });
+    
+                    if (!alreadyLoaded) {
+                        newEmails.push(getMessage(messageIds[i].id));
+                    }
+                } catch {
+                    console.log("Failed on ", messageIds[i].id);
+                }
+            }
+
+            Promise.all(newEmails).then((values) => {
+                resolve(values);
+            });
+        }).then((newEmails) => {
+            if (newEmails.length > 0) {
+                newEmails.forEach(newEmail => {
+                    loadedEmailsRef.current.unshift(newEmail);
+                    displayedEmailsRef.current.unshift(newEmail);
+                });
+
+                console.log("New emails processed:");
+                console.log(newEmails);
+    
+                setLoadedEmails(loadedEmailsRef.current);
+                setDisplayedEmails(displayedEmailsRef.current);
+            }
+        });
     }
 
     function decodeBase64HTML(data) {
@@ -295,7 +382,7 @@ function InboxPage(props) {
             <button id="create_email" onClick={toggleCreateEmailModal}>
                 Compose Email
             </button>
-            <Search></Search>
+            <Search />
             <CreateEmailModal
                 isOpen={createEmailModalIsOpen}
                 toggle={toggleCreateEmailModal}
@@ -322,7 +409,7 @@ function InboxPage(props) {
                     </tbody>
                 </Table>
             </div>
-            {loadedEmails.length == 0 && (
+            {displayedEmails.length == 0 && (
                 <div style={{ "text-align": "center" }}>
                     <Spinner color="primary" />
                 </div>
