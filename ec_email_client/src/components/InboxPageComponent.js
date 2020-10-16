@@ -39,6 +39,8 @@ export default class InboxPageComponent extends React.Component {
         this.decodeBase64HTML = this.decodeBase64HTML.bind(this);
         this.refreshInbox = this.refreshInbox.bind(this);
         this.toggleCreateEmailModal = this.toggleCreateEmailModal.bind(this);
+        this.getAttachmentData = this.getAttachmentData.bind(this);
+        this.downloadAttachment = this.downloadAttachment.bind(this);
     }
 
     async getMessages() {
@@ -104,6 +106,8 @@ export default class InboxPageComponent extends React.Component {
             from: "null",
             to: "null",
             subject: "null",
+            attachmentName: "null",
+            attachment: "",
             headers: {},
             id: "null",
             snippet: "null",
@@ -118,26 +122,65 @@ export default class InboxPageComponent extends React.Component {
                     id: messageId,
                 })
                 .then((response) => {
-                    // console.log(response.result);
+                    //console.log(response.result);
 
-                    // If it has two payload parts
+
+                    // We need to actually iterate through the email parts and see what they are and properly assign them 
+                    var partsCounter;
                     if (
                         !!response.result.payload.parts &&
                         response.result.payload.parts.length > 1
                     ) {
-                        message.bodyText = this.decodeBase64HTML(
-                            response.result.payload.parts[0].body.data
-                        );
-                        message.bodyHTML = this.decodeBase64HTML(
-                            response.result.payload.parts[1].body.data
-                        );
+                        // Iterate through all the message parts and check if there is a file name, and check MimeType to assign correctly  
+                        for (partsCounter = 0; partsCounter < response.result.payload.parts.length; partsCounter++) {
+                            
+                            // There are many different MIME Types for attachments, just check if filename exists, if true, we have a file
+                            if (response.result.payload.parts[partsCounter].filename) {
+                                message.attachmentName = 
+                                    response.result.payload.parts[partsCounter].filename;
+
+                                //Need to check for mime type so download works correctly
+                                var mimeTypeCheck = response.result.payload.parts[partsCounter].mimeType;
+
+                                //Must build correct .attachment format for download function
+                                var MessageData = this.getAttachmentData(messageId, response.result.payload.parts[partsCounter]);
+                                MessageData.then(function (result){
+                                    message.attachment = 'data:'+mimeTypeCheck+';base64,'+result.result.data;
+                                });
+                            }
+                            //We still need to properly assign part to correct piece of email based on mime type
+                            if (response.result.payload.parts[partsCounter].mimeType == "text/html") {
+                                message.bodyHTML = this.decodeBase64HTML(
+                                    response.result.payload.parts[partsCounter].body.data
+                                );
+                            }
+                            if (response.result.payload.parts[partsCounter].mimeType == "text/plain") {
+                                message.bodyText = this.decodeBase64HTML(
+                                    response.result.payload.parts[partsCounter].body.data
+                                );
+                            }
+                        }
+
+                    // If message only has one (1) part, properly assign its data to corresponding piece 
                     } else if (
                         !!response.result.payload.body &&
                         !!response.result.payload.body.data
                     ) {
-                        message.bodyText = this.decodeBase64HTML(
-                            response.result.payload.body.data
-                        );
+
+                        switch (response.result.payload.mimeType) {
+                            case ("text/plain"):
+                                message.bodyText = this.decodeBase64HTML(
+                                    response.result.payload.body.data
+                                );
+                                break;
+
+                            case ("text/html"):
+                                message.bodyHTML = this.decodeBase64HTML(
+                                    response.result.payload.body.data
+                                );
+                                break;
+                        }
+
 
                         // Checks if HTML was put in body.data
                         if (
@@ -185,7 +228,16 @@ export default class InboxPageComponent extends React.Component {
                     message.id = response.result.id;
                     resolve(message);
                 });
+
         });
+    }
+
+    downloadAttachment(e) {
+        let dataBase64Rep = e.message.attachment.replace(/-/g, '+').replace(/_/g, '/')
+        var attachmentForDownload = document.createElement("a");
+        attachmentForDownload.href = dataBase64Rep;
+        attachmentForDownload.download = e.message.attachmentName;
+        attachmentForDownload.click();
     }
 
     decodeBase64(data) {
@@ -328,6 +380,18 @@ export default class InboxPageComponent extends React.Component {
         event.preventDefault();
     }
 
+    // Call to API to get data about the attachment 
+    async getAttachmentData(messageID, parts){
+        var attachId = parts.body.attachmentId;
+        var request = window.gapi.client.gmail.users.messages.attachments
+            .get({
+                'id': attachId,
+                'messageId': messageID,
+                'userId': 'me'
+            });
+        return request;
+    }
+
     componentDidMount() {
         this.getMessages().then((emails) => {
             this.setState({loadedEmails: emails});
@@ -417,6 +481,14 @@ function InboxEmailRow(props) {
         console.log("Should be forwarding");
     }
 
+    function downloadAttachment() {
+        let dataBase64Rep = props.message.attachment.replace(/-/g, '+').replace(/_/g, '/')
+        var attachmentForDownload = document.createElement("a");
+        attachmentForDownload.href = dataBase64Rep;
+        attachmentForDownload.download = props.message.attachmentName;
+        attachmentForDownload.click();
+    }
+
     let from = props.message.from.split(" <")[0];
     if (from.length > 30) {
         from = from.substring(0, 30) + "...";
@@ -447,6 +519,7 @@ function InboxEmailRow(props) {
                 email={props.message}
                 replyFunction={setupReply}
                 forwardFunction={setupForward}
+                downloadFunction={downloadAttachment}
             />
             <CreateEmailModal
                 isOpen={forwardEmailModalIsOpen}
@@ -485,6 +558,14 @@ function ViewEmailModal(props) {
                 <b>Date:</b> {props.email.date}
                 <br />
                 <b>Subject:</b> {props.email.subject}
+                <br />
+                {props.email.attachmentName !== "null" && (
+                    <div><b>Attachment: </b>{props.email.attachmentName} <br />
+                        <Button color="success" onClick={props.downloadFunction}>
+                            Download Attachment
+                        </Button>{" "}
+                    </div>
+                )}
                 <hr />
                 {props.email.bodyHTML !== "null" && (
                     <div
