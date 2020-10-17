@@ -280,9 +280,10 @@ export default class InboxPageComponent extends React.Component {
             this.setState({displayedEmails: emailsToBeDisplayed});
         } else {
             this.getMessages().then((emails) => {
-                this.setState({loadedEmails: emails});
+                var emailsToBeLoaded = this.state.loadedEmails;
+                this.setState({loadedEmails: emailsToBeLoaded.concat(emails)});
 
-                var emailsToBeDisplayed = emails.slice(0, this.state.displayedEmails.length + 20);
+                var emailsToBeDisplayed = emailsToBeLoaded.slice(0, this.state.displayedEmails.length + 20);
                 this.setState({displayedEmails: emailsToBeDisplayed});
             });
         }
