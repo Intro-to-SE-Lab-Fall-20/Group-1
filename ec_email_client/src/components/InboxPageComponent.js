@@ -234,8 +234,9 @@ export default class InboxPageComponent extends React.Component {
                         message.snippet = response.result.snippet;
                     }
 
-                    if (response.result.threadId)
+                    if (response.result.threadId) {
                         message.threadId = response.result.threadId;
+                    }
 
                     // Gets all headers, turns in to dict
                     let headers = {};
@@ -257,9 +258,6 @@ export default class InboxPageComponent extends React.Component {
                     message.headers = headers;
 
                     message.id = response.result.id;
-                    if (message.id == "1753f0c7fcbb8c2a") {
-                        console.log(response.result);
-                    }
 
                     resolve(message);
                 });
