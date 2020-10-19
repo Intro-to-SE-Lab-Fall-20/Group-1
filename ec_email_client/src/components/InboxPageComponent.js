@@ -206,7 +206,23 @@ export default class InboxPageComponent extends React.Component {
                         ) {
                             message.bodyHTML = message.bodyText;
                         }
-                    } else {
+                    } else if (response.result.payload.parts.length == 1 && response.result.payload.parts[0].parts
+                        && response.result.payload.parts[0].parts.length == 1 && response.result.payload.parts[0].parts[0].mimeType == "text/html") {
+                        switch (response.result.payload.parts[0].parts[0].mimeType) {
+                            case "text/plain":
+                                message.bodyText = this.decodeBase64HTML(
+                                    response.result.payload.parts[0].parts[0].body.data
+                                );
+                                break;
+
+                            case "text/html":
+                                message.bodyHTML = this.decodeBase64HTML(
+                                    response.result.payload.parts[0].parts[0].body.data
+                                );
+                                break;
+                        }
+                    }
+                    else {
                         console.log(
                             "Failed getting message body for:",
                             response.result
@@ -241,6 +257,10 @@ export default class InboxPageComponent extends React.Component {
                     message.headers = headers;
 
                     message.id = response.result.id;
+                    if (message.id == "1753f0c7fcbb8c2a") {
+                        console.log(response.result);
+                    }
+
                     resolve(message);
                 });
         });

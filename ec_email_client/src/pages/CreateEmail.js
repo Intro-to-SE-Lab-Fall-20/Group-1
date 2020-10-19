@@ -212,27 +212,26 @@ class EmailComposition extends React.Component {
         var toSend = this.state.recipient.replace(",", ", ");
         var CCs = this.state.cc.replace(",", ", ");
 
-        // TODO: Possible make content editable div to render HTML? Or maybe just display reply email below the text are as a div
-        // https://stackoverflow.com/questions/4705848/rendering-html-inside-textarea
-
-        // Could just make all newLines be <br /> or something?
-
-        var messageParts = [
-            `To: ${toSend}`,
-            `CC: ${CCs}`,
-            "Content-Type: text/html; charset=utf-8",
-            "MIME-Version: 1.0",
-            `Subject: ${utf8Subject}`,
-            "",
-            messageContent,
-        ];
+        let messageParts = null;
+        // https://www.npmjs.com/package/mimemessage
+        let msg = mimemessage.factory({
+            contentType: "multipart/mixed",
+            body: [],
+        });
+        msg.header("To", toSend);
+        msg.header("CC", CCs);
+        msg.header("Subject", utf8Subject);
+        let alternateEntity = mimemessage.factory({
+            contentType: "multipart/alternate",
+            body: [],
+        });
+        let htmlEntity = mimemessage.factory({
+            contentType: "text/html;charset=utf-8",
+            body: messageContent,
+        });
 
         // If reply
         if (this.props.reply) {
-            let tempSubject = `=?utf-8?B?${Buffer.from(
-                `${utf8Subject}`
-            ).toString("base64")}?=`;
-
             let inReplyTo = this.props.replyMessage.headers["Message-Id"];
 
             let references = inReplyTo;
@@ -240,59 +239,15 @@ class EmailComposition extends React.Component {
                 references = `${inReplyTo},${this.props.replyMessage.headers["References"]}`;
             }
 
+            msg.header("In-Reply-To", inReplyTo);
+            msg.header("Reply-To", this.props.replyMessage.to)
+            msg.header("References", references);
+
             threadId = this.props.replyMessage.threadId;
-
-            messageParts = [
-                `To: ${toSend}`,
-                `CC: ${CCs}`,
-                "Content-Type: text/html; charset=utf-8",
-                "MIME-Version: 1.0",
-                `Subject: ${tempSubject}`,
-                `In-Reply-To: ${inReplyTo}`,
-                `Reply-To: ${this.props.replyMessage.to}`,
-                `References: ${references}`,
-                "",
-                messageContent,
-            ];
         }
-
-        // If forward
-        if (this.props.forward) {
-            let tempSubject = `=?utf-8?B?${Buffer.from(
-                `${utf8Subject}`
-            ).toString("base64")}?=`;
-
-            messageParts = [
-                `To: ${toSend}`,
-                `CC: ${CCs}`,
-                "Content-Type: text/html; charset=utf-8",
-                "MIME-Version: 1.0",
-                `Subject: ${tempSubject}`,
-                "",
-                messageContent,
-            ];
-        }
-
-        // TODO: See if adding an attachment to a reply messes it up??
 
         //If the email has an attachment, it needs to use the multipart structure
         if (this.state.file && this.state.file != "") {
-            // https://www.npmjs.com/package/mimemessage
-            let msg = mimemessage.factory({
-                contentType: "multipart/mixed",
-                body: [],
-            });
-            msg.header("To", toSend);
-            msg.header("CC", CCs);
-            msg.header("Subject", utf8Subject);
-            let alternateEntity = mimemessage.factory({
-                contentType: "multipart/alternate",
-                body: [],
-            });
-            let htmlEntity = mimemessage.factory({
-                contentType: "text/html;charset=utf-8",
-                body: messageContent,
-            });
             let attachEntity = mimemessage.factory({
                 contentType: this.state.file.type,
                 contentTransferEncoding: "base64",
@@ -302,19 +257,13 @@ class EmailComposition extends React.Component {
                 "Content-Disposition",
                 `attachment ;filename="${this.state.file.name}"`
             );
-            alternateEntity.body.push(htmlEntity);
-            msg.body.push(alternateEntity);
             msg.body.push(attachEntity);
-            messageParts = msg.toString();
         }
 
-        let message = null;
-        if (typeof messageParts != "string") {
-            message = messageParts.join("\n");
-        } else {
-            message = messageParts;
-            console.log(message);
-        }
+        alternateEntity.body.push(htmlEntity);
+        msg.body.push(alternateEntity);
+        let message = msg.toString();
+
 
         // The body needs to be base64url encoded.
         const encodedMessage = Buffer.from(message)
