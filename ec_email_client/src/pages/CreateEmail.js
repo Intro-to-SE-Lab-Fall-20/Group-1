@@ -3,6 +3,7 @@ import { renderToString } from "react-dom/server";
 import { Editor } from "@tinymce/tinymce-react";
 import Alert from "react-bootstrap/Alert";
 import "./CreateEmail.css";
+var mimemessage = require("mimemessage");
 
 class EmailComposition extends React.Component {
     constructor(props) {
@@ -276,31 +277,44 @@ class EmailComposition extends React.Component {
 
         //If the email has an attachment, it needs to use the multipart structure
         if (this.state.file && this.state.file != "") {
-            messageParts = [
-                `Content-Type: multipart/mixed; boundary="foo_bar_baz"`,
-                "MIME-Version: 1.0",
-                `To: ${toSend}`,
-                `CC: ${CCs}`,
-                `Subject: ${utf8Subject}`,
-                "",
-
-                "--foo_bar_baz",
-                "Content-Type: text/html; charset=utf-8",
-                "MIME-Version: 1.0",
-                "Content-Transfer-Encoding: 7bit",
-                messageContent,
-
-                "--foo_bar_baz",
-                `Content-Type: ${this.state.file.type}`,
-                "MIME-Version: 1.0",
-                "Content-Transfer-Encoding: base64",
-                `Content-Disposition: attachment; filename="${this.state.file.name}"`,
-                this.state.file64,
-                "--foo_bar_baz",
-            ];
+            // https://www.npmjs.com/package/mimemessage
+            let msg = mimemessage.factory({
+                contentType: "multipart/mixed",
+                body: [],
+            });
+            msg.header("To", toSend);
+            msg.header("CC", CCs);
+            msg.header("Subject", utf8Subject);
+            let alternateEntity = mimemessage.factory({
+                contentType: "multipart/alternate",
+                body: [],
+            });
+            let htmlEntity = mimemessage.factory({
+                contentType: "text/html;charset=utf-8",
+                body: messageContent,
+            });
+            let attachEntity = mimemessage.factory({
+                contentType: this.state.file.type,
+                contentTransferEncoding: "base64",
+                body: this.state.file64,
+            });
+            attachEntity.header(
+                "Content-Disposition",
+                `attachment ;filename="${this.state.file.name}"`
+            );
+            alternateEntity.body.push(htmlEntity);
+            msg.body.push(alternateEntity);
+            msg.body.push(attachEntity);
+            messageParts = msg.toString();
         }
 
-        const message = messageParts.join("\n");
+        let message = null;
+        if (typeof messageParts != "string") {
+            message = messageParts.join("\n");
+        } else {
+            message = messageParts;
+            console.log(message);
+        }
 
         // The body needs to be base64url encoded.
         const encodedMessage = Buffer.from(message)
