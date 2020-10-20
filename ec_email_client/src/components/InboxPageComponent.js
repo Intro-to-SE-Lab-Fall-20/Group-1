@@ -106,8 +106,8 @@ export default class InboxPageComponent extends React.Component {
             from: "null",
             to: "null",
             subject: "null",
-            attachmentName: "null",
-            attachment: "",
+            attachmentName: [],
+            attachment: [],
             headers: {},
             id: "null",
             snippet: "null",
@@ -136,8 +136,8 @@ export default class InboxPageComponent extends React.Component {
                             
                             // There are many different MIME Types for attachments, just check if filename exists, if true, we have a file
                             if (response.result.payload.parts[partsCounter].filename) {
-                                message.attachmentName = 
-                                    response.result.payload.parts[partsCounter].filename;
+                                message.attachmentName.push( 
+                                    response.result.payload.parts[partsCounter].filename);
 
                                 //Need to check for mime type so download works correctly
                                 var mimeTypeCheck = response.result.payload.parts[partsCounter].mimeType;
@@ -145,8 +145,9 @@ export default class InboxPageComponent extends React.Component {
                                 //Must build correct .attachment format for download function
                                 var MessageData = this.getAttachmentData(messageId, response.result.payload.parts[partsCounter]);
                                 MessageData.then(function (result){
-                                    message.attachment = 'data:'+mimeTypeCheck+';base64,'+result.result.data;
+                                    message.attachment.push('data:'+mimeTypeCheck+';base64,'+result.result.data);
                                 });
+
                             }
                             //We still need to properly assign part to correct piece of email based on mime type
                             if (response.result.payload.parts[partsCounter].mimeType == "text/html") {
@@ -232,7 +233,7 @@ export default class InboxPageComponent extends React.Component {
         });
     }
 
-    downloadAttachment(e) {
+    downloadAttachment(e, attachmentNumber) {
         let dataBase64Rep = e.message.attachment.replace(/-/g, '+').replace(/_/g, '/')
         var attachmentForDownload = document.createElement("a");
         attachmentForDownload.href = dataBase64Rep;
@@ -271,7 +272,7 @@ export default class InboxPageComponent extends React.Component {
         if (tbodyElement.getBoundingClientRect().bottom.toString().includes(640)) {
             this.LoadEmails();
         }
-        console.log(tbodyElement.getBoundingClientRect().bottom);
+        //console.log(tbodyElement.getBoundingClientRect().bottom);
     }
 
     LoadEmails() {
@@ -481,11 +482,15 @@ function InboxEmailRow(props) {
         console.log("Should be forwarding");
     }
 
-    function downloadAttachment() {
-        let dataBase64Rep = props.message.attachment.replace(/-/g, '+').replace(/_/g, '/')
+    function downloadAttachment( attachmentNumber ) {
+        var attNum = this.key;
+        let dataBase64Rep = props.message.attachment[attNum];
+        dataBase64Rep = dataBase64Rep
+            .replace(/-/g, '+')
+            .replace(/_/g, '/');
         var attachmentForDownload = document.createElement("a");
         attachmentForDownload.href = dataBase64Rep;
-        attachmentForDownload.download = props.message.attachmentName;
+        attachmentForDownload.download = props.message.attachmentName[attNum];
         attachmentForDownload.click();
     }
 
@@ -567,10 +572,14 @@ function ViewEmailModal(props) {
                 <b>Subject:</b> {props.email.subject}
                 <br />
                 {props.email.attachmentName !== "null" && (
-                    <div><b>Attachment: </b>{props.email.attachmentName} <br />
-                        <Button color="success" onClick={props.downloadFunction}>
+                    <div><b>Attachment(s): </b>
+
+                    {Object.keys(props.email.attachmentName).map(key => <p>{key}: {props.email.attachmentName[key]} <Button color="success" onClick={props.downloadFunction.bind({key})}>
                             Download Attachment
-                        </Button>{" "}
+                        </Button>{" "}</p> )}
+                    
+                    <br />
+
                     </div>
                 )}
                 <hr />
