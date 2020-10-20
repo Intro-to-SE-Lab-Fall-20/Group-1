@@ -511,7 +511,7 @@ function InboxEmailRow(props) {
                 <td>
                     <b>{subject}</b>
                 </td>
-                <td>{props.message.snippet}</td>
+                <td>{htmlDecode(props.message.snippet)}</td>
             </tr>
             <ViewEmailModal
                 modalIsOpen={modalIsOpen}
@@ -536,6 +536,13 @@ function InboxEmailRow(props) {
         </>
     );
 }
+
+function htmlDecode(input){
+    var e = document.createElement('textarea');
+    e.innerHTML = input;
+    // handle case of empty input
+    return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
+  }
 
 function ViewEmailModal(props) {
     // Modal docs https://reactstrap.github.io/components/modals/
@@ -570,12 +577,12 @@ function ViewEmailModal(props) {
                 {props.email.bodyHTML !== "null" && (
                     <div
                         dangerouslySetInnerHTML={{
-                            __html: props.email.bodyHTML,
+                            __html: htmlDecode(props.email.bodyHTML.toString().replace("ï»¿","")),
                         }}
                     />
                 )}
                 {props.email.bodyHTML === "null" && (
-                    <div>{props.email.bodyText}</div>
+                    <div>{htmlDecode(props.email.bodyText).replace("ï»¿","")}</div>
                 )}
                 <br />
             </ModalBody>
