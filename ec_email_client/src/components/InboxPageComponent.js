@@ -74,7 +74,7 @@ export default class InboxPageComponent extends React.Component {
                     pageToken: this.state.nextPageToken
                 })
                 .then((response) => {
-                    this.setState({nextPageToken: response.result.nextPageToken});
+                    this.setState({ nextPageToken: response.result.nextPageToken });
                     resolve(response.result.messages);
                 });
         });
@@ -124,7 +124,6 @@ export default class InboxPageComponent extends React.Component {
                 .then((response) => {
                     //console.log(response.result);
 
-
                     // We need to actually iterate through the email parts and see what they are and properly assign them 
                     var partsCounter;
                     if (
@@ -133,10 +132,10 @@ export default class InboxPageComponent extends React.Component {
                     ) {
                         // Iterate through all the message parts and check if there is a file name, and check MimeType to assign correctly  
                         for (partsCounter = 0; partsCounter < response.result.payload.parts.length; partsCounter++) {
-                            
+
                             // There are many different MIME Types for attachments, just check if filename exists, if true, we have a file
                             if (response.result.payload.parts[partsCounter].filename) {
-                                message.attachmentName = 
+                                message.attachmentName =
                                     response.result.payload.parts[partsCounter].filename;
 
                                 //Need to check for mime type so download works correctly
@@ -144,8 +143,8 @@ export default class InboxPageComponent extends React.Component {
 
                                 //Must build correct .attachment format for download function
                                 var MessageData = this.getAttachmentData(messageId, response.result.payload.parts[partsCounter]);
-                                MessageData.then(function (result){
-                                    message.attachment = 'data:'+mimeTypeCheck+';base64,'+result.result.data;
+                                MessageData.then(function (result) {
+                                    message.attachment = 'data:' + mimeTypeCheck + ';base64,' + result.result.data;
                                 });
                             }
                             //We still need to properly assign part to correct piece of email based on mime type
@@ -159,28 +158,44 @@ export default class InboxPageComponent extends React.Component {
                                     response.result.payload.parts[partsCounter].body.data
                                 );
                             }
+
+                            // If part has subparts that contain text or data (often when included with attachments), then get data out of there
+                            if (response.result.payload.parts[partsCounter].parts && response.result.payload.parts[partsCounter].parts.length > 0) {
+                                // Cycles through all parts and assign appropriate plain or html variables
+                                for (let i = 0; i < response.result.payload.parts[partsCounter].parts.length; i++) {
+                                    let part = response.result.payload.parts[partsCounter].parts[i];
+                                    if (part.mimeType == "text/plain") {
+                                        message.bodyText = this.decodeBase64HTML(
+                                            part.body.data
+                                        );
+                                    }
+                                    if (part.mimeType == "text/html") {
+                                        message.bodyHTML = this.decodeBase64HTML(
+                                            part.body.data
+                                        );
+                                    }
+                                }
+                            }
                         }
 
-                    // If message only has one (1) part, properly assign its data to corresponding piece 
+                        // If message only has one (1) part, properly assign its data to corresponding piece
                     } else if (
                         !!response.result.payload.body &&
                         !!response.result.payload.body.data
                     ) {
-
                         switch (response.result.payload.mimeType) {
-                            case ("text/plain"):
+                            case "text/plain":
                                 message.bodyText = this.decodeBase64HTML(
                                     response.result.payload.body.data
                                 );
                                 break;
 
-                            case ("text/html"):
+                            case "text/html":
                                 message.bodyHTML = this.decodeBase64HTML(
                                     response.result.payload.body.data
                                 );
                                 break;
                         }
-
 
                         // Checks if HTML was put in body.data
                         if (
@@ -191,7 +206,23 @@ export default class InboxPageComponent extends React.Component {
                         ) {
                             message.bodyHTML = message.bodyText;
                         }
-                    } else {
+                    } else if (response.result.payload.parts.length == 1 && response.result.payload.parts[0].parts
+                        && response.result.payload.parts[0].parts.length == 1 && response.result.payload.parts[0].parts[0].mimeType == "text/html") {
+                        switch (response.result.payload.parts[0].parts[0].mimeType) {
+                            case "text/plain":
+                                message.bodyText = this.decodeBase64HTML(
+                                    response.result.payload.parts[0].parts[0].body.data
+                                );
+                                break;
+
+                            case "text/html":
+                                message.bodyHTML = this.decodeBase64HTML(
+                                    response.result.payload.parts[0].parts[0].body.data
+                                );
+                                break;
+                        }
+                    }
+                    else {
                         console.log(
                             "Failed getting message body for:",
                             response.result
@@ -203,8 +234,9 @@ export default class InboxPageComponent extends React.Component {
                         message.snippet = response.result.snippet;
                     }
 
-                    if (response.result.threadId)
+                    if (response.result.threadId) {
                         message.threadId = response.result.threadId;
+                    }
 
                     // Gets all headers, turns in to dict
                     let headers = {};
@@ -226,14 +258,16 @@ export default class InboxPageComponent extends React.Component {
                     message.headers = headers;
 
                     message.id = response.result.id;
+
                     resolve(message);
                 });
-
         });
     }
 
     downloadAttachment(e) {
-        let dataBase64Rep = e.message.attachment.replace(/-/g, '+').replace(/_/g, '/')
+        let dataBase64Rep = e.message.attachment
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
         var attachmentForDownload = document.createElement("a");
         attachmentForDownload.href = dataBase64Rep;
         attachmentForDownload.download = e.message.attachmentName;
@@ -277,7 +311,7 @@ export default class InboxPageComponent extends React.Component {
     LoadEmails() {
         if (this.state.displayedEmails.length + 20 < this.state.loadedEmails.length) {
             var emailsToBeDisplayed = this.state.loadedEmails.slice(0, this.state.displayedEmails.length + 20)
-            this.setState({displayedEmails: emailsToBeDisplayed});
+            this.setState({ displayedEmails: emailsToBeDisplayed });
         } else {
             this.getMessages().then((emails) => {
                 var emailsToBeLoaded = this.state.loadedEmails;
@@ -300,12 +334,12 @@ export default class InboxPageComponent extends React.Component {
                 for (var i = 0; i < 10; i++) {
                     try {
                         var alreadyLoaded = false;
-                        newLoadedEmails.forEach(loadedEmail => {
+                        newLoadedEmails.forEach((loadedEmail) => {
                             if (loadedEmail.id == messageIds[i].id) {
                                 alreadyLoaded = true;
                             }
                         });
-        
+
                         if (!alreadyLoaded) {
                             newEmails.push(this.getMessage(messageIds[i].id));
                         }
@@ -318,26 +352,50 @@ export default class InboxPageComponent extends React.Component {
                     resolve(values);
                 });
             }).then((newEmails) => {
+
+                // Utility for splitting array into groups based on element property
+                function groupByUtil(arr, property) {
+                    return arr.reduce(function(memo, x) {
+                      if (!memo[x[property]]) { memo[x[property]] = []; }
+                      memo[x[property]].push(x);
+                      return memo;
+                    }, {});
+                }
+
+                // BUG: A "bug" exists in our system such that when a user replies to their
+                // own email, the gmail API will detect two emails. This ensures that only the
+                // "true" email reply is picked up while the other, assumed to be some artifact that
+                // EC Email Client is not taking into account of, is ignored
+                // David Mentgen - 10/17/2020
+                var groupedNewEmails = groupByUtil(newEmails, "snippet");
+                for (var key in groupedNewEmails) {
+                    if (groupedNewEmails[key].length == 2) {
+                        newEmails = newEmails.filter(function(obj) {
+                            return obj.id !== groupedNewEmails[key][1].id;
+                        });
+                    }
+                }
+
                 if (newEmails.length > 0) {
-                    newEmails.forEach(newEmail => {
+                    newEmails.forEach((newEmail) => {
                         newLoadedEmails.unshift(newEmail);
                         newDisplayEmails.unshift(newEmail);
                     });
 
                     console.log("New emails processed:");
                     console.log(newEmails);
-        
+
                     this.setState({
                         loadedEmails: newLoadedEmails,
-                        displayedEmails: newDisplayEmails
-                    })
+                        displayedEmails: newDisplayEmails,
+                    });
                 }
             });
         }
     }
 
     toggleCreateEmailModal() {
-        this.setState({createEmailModalIsOpen: !this.state.createEmailModalIsOpen});
+        this.setState({ createEmailModalIsOpen: !this.state.createEmailModalIsOpen });
     }
 
     Search() {
@@ -347,7 +405,9 @@ export default class InboxPageComponent extends React.Component {
                     <input
                         type="text"
                         value={this.state.searchTerm}
-                        onBlur={(e) => this.setState({searchTerm: e.target.value})}
+                        onBlur={(e) =>
+                            this.setState({ searchTerm: e.target.value })
+                        }
                     />
                     <input type="submit" value="Submit" />
                     <button type="button" onClick={(e) => this.handleReset(e)}>
@@ -358,31 +418,34 @@ export default class InboxPageComponent extends React.Component {
         );
     }
 
-    handleSubmit(event){
+    handleSubmit(event) {
         this.getMessages().then((emails) => {
-            this.setState({loadedEmails: emails});
+            this.setState({ loadedEmails: emails });
 
             var emailsToBeDisplayed = emails.slice(0, this.state.displayedEmails.length + 20);
-            this.setState({displayedEmails: emailsToBeDisplayed});
+            this.setState({ displayedEmails: emailsToBeDisplayed });
         });
-        this.setState({refreshEnabled: false});
+        this.setState({ refreshEnabled: false });
         event.preventDefault();
     }
 
     handleReset(event) {
-        this.setState({searchTerm: null})
+        this.setState({ searchTerm: null });
         this.getMessages().then((emails) => {
-            this.setState({loadedEmails: emails});
+            this.setState({ loadedEmails: emails });
 
-            var emailsToBeDisplayed = emails.slice(0, this.state.displayedEmails.length + 20);
-            this.setState({displayedEmails: emailsToBeDisplayed});
+            var emailsToBeDisplayed = emails.slice(
+                0,
+                this.state.displayedEmails.length + 20
+            );
+            this.setState({ displayedEmails: emailsToBeDisplayed });
         });
-        this.setState({refreshEnabled: true});
+        this.setState({ refreshEnabled: true });
         event.preventDefault();
     }
 
     // Call to API to get data about the attachment 
-    async getAttachmentData(messageID, parts){
+    async getAttachmentData(messageID, parts) {
         var attachId = parts.body.attachmentId;
         var request = window.gapi.client.gmail.users.messages.attachments
             .get({
@@ -395,9 +458,9 @@ export default class InboxPageComponent extends React.Component {
 
     componentDidMount() {
         this.getMessages().then((emails) => {
-            this.setState({loadedEmails: emails});
+            this.setState({ loadedEmails: emails });
 
-            this.setState({displayedEmails: emails.slice(0, this.state.displayedEmails.length + 20)});
+            this.setState({ displayedEmails: emails.slice(0, this.state.displayedEmails.length + 20) });
         })
 
         setInterval(() => {
@@ -512,7 +575,7 @@ function InboxEmailRow(props) {
                 <td>
                     <b>{subject}</b>
                 </td>
-                <td>{props.message.snippet}</td>
+                <td>{htmlDecode(props.message.snippet)}</td>
             </tr>
             <ViewEmailModal
                 modalIsOpen={modalIsOpen}
@@ -537,6 +600,13 @@ function InboxEmailRow(props) {
         </>
     );
 }
+
+function htmlDecode(input){
+    var e = document.createElement('textarea');
+    e.innerHTML = input;
+    // handle case of empty input
+    return e.childNodes.length === 0 ? "" : e.childNodes[0].nodeValue;
+  }
 
 function ViewEmailModal(props) {
     // Modal docs https://reactstrap.github.io/components/modals/
@@ -571,12 +641,12 @@ function ViewEmailModal(props) {
                 {props.email.bodyHTML !== "null" && (
                     <div
                         dangerouslySetInnerHTML={{
-                            __html: props.email.bodyHTML,
+                            __html: htmlDecode(props.email.bodyHTML.toString().replace("ï»¿","")),
                         }}
                     />
                 )}
                 {props.email.bodyHTML === "null" && (
-                    <div>{props.email.bodyText}</div>
+                    <div>{htmlDecode(props.email.bodyText).replace("ï»¿","")}</div>
                 )}
                 <br />
             </ModalBody>
