@@ -135,6 +135,7 @@ export default class InboxPageComponent extends React.Component {
 
                             // There are many different MIME Types for attachments, just check if filename exists, if true, we have a file
                             if (response.result.payload.parts[partsCounter].filename) {
+                                console.log(response.result.payload);
                                 message.attachmentName.push( 
                                     response.result.payload.parts[partsCounter].filename);
 
@@ -635,12 +636,14 @@ function ViewEmailModal(props) {
                 <br />
                 <b>Subject:</b> {props.email.subject}
                 <br />
-                {props.email.attachmentName !== "null" && (
+                {props.email.attachmentName !== [] && (
                     <div><b>Attachment(s): </b>
 
-                    {Object.keys(props.email.attachmentName).map(key => <p>{key}: {props.email.attachmentName[key]} <Button color="success" onClick={props.downloadFunction.bind({key})}>
-                            Download Attachment
-                        </Button>{" "}</p> )}
+                    {Object.keys(props.email.attachmentName)
+                        .map(key => <p>{props.email.attachmentName[key]} 
+                            <Button color="success" onClick={props.downloadFunction.bind({key})}>
+                                Download Attachment
+                            </Button>{" "}</p> )}
                     
                     <br />
 
