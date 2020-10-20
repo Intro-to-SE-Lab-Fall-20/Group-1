@@ -351,6 +351,30 @@ export default class InboxPageComponent extends React.Component {
                     resolve(values);
                 });
             }).then((newEmails) => {
+
+                // Utility for splitting array into groups based on element property
+                function groupByUtil(arr, property) {
+                    return arr.reduce(function(memo, x) {
+                      if (!memo[x[property]]) { memo[x[property]] = []; }
+                      memo[x[property]].push(x);
+                      return memo;
+                    }, {});
+                }
+
+                // BUG: A "bug" exists in our system such that when a user replies to their
+                // own email, the gmail API will detect two emails. This ensures that only the
+                // "true" email reply is picked up while the other, assumed to be some artifact that
+                // EC Email Client is not taking into account of, is ignored
+                // David Mentgen - 10/17/2020
+                var groupedNewEmails = groupByUtil(newEmails, "snippet");
+                for (var key in groupedNewEmails) {
+                    if (groupedNewEmails[key].length == 2) {
+                        newEmails = newEmails.filter(function(obj) {
+                            return obj.id !== groupedNewEmails[key][1].id;
+                        });
+                    }
+                }
+
                 if (newEmails.length > 0) {
                     newEmails.forEach((newEmail) => {
                         newLoadedEmails.unshift(newEmail);
