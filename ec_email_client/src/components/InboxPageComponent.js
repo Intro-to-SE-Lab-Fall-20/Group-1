@@ -266,6 +266,7 @@ export default class InboxPageComponent extends React.Component {
         });
     }
 
+<<<<<<< HEAD
     downloadAttachment(e) {
         let dataBase64Rep = e.message.attachment
             .replace(/-/g, "+")
