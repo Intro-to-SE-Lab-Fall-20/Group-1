@@ -1,0 +1,24 @@
+# ------------------------------------------- Instructions -------------------------------------------
+# To create:
+#   docker build -t custom-mysql:latest .
+# After building, run following command to create:
+#   docker run -dit -p 3306:3306 --name ecSQL -e MYSQL_ROOT_PASSWORD=secretpassword custom-mysql:latest
+# Connect by using:
+#   docker exec -it ecSQL bash
+# Login to mysql by doing:
+#   mysql -uroot -p
+# And type in your password
+# NOTE: If using python, do pip install mysql-connector-python
+# PYTHON CONNECTION EX: connection = mysql.connector.connect(host='localhost',database='infoSec',user='testUser',password='newpassword',port=3306)
+# Ref:  https://medium.com/better-programming/customize-your-mysql-database-in-docker-723ffd59d8fb
+#       https://medium.com/@billydharmawan/how-to-connect-to-mysql-docker-from-python-application-on-macos-mojave-32c7834e5afa
+# ------------------------------------------------- End -----------------------------------------------
+
+
+# Use latest mysql image
+FROM mysql:latest
+
+# All scripts in docker-entrypoint-initdb.d/ are automatically
+# executed during container startup
+COPY databaseCreation.sql /docker-entrypoint-initdb.d/
+
