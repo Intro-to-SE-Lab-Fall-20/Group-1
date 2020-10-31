@@ -161,9 +161,73 @@ function getNoteText(username, noteName){
     })
 }
 
+function createNewToken(){
+    var rand = function() {
+        return Math.random().toString(36).substr(2); 
+    };
+
+    let value = "";
+    while (value.length < 100){
+        value = value + rand();
+    }
+
+    return value.substr(0,100);
+}
+
+function getNewTokenForUsername(username){
+    return new Promise((resolve, reject)=>{
+        let token = createNewToken();
+        
+        // Converts date to datetime for SQL, gives token 1 hour until expires
+        let date = new Date();
+        date.setHours(date.getHours() + 1);
+        date = date.toISOString().slice(0, 19).replace('T', ' ');
+        
+        let query = `REPLACE INTO tokens (username, token, expires) values("${username}","${token}","${date}")`
+        con.query(query, (error, result)=>{
+            resolve(token);
+        });
+    })
+
+
+}
+
+function loginIsCorrect(username, passwordHash){
+    return new Promise((resolve, reject)=>{
+        let query = `SELECT * FROM users WHERE username = "${username}";`;
+        con.query(query, (error, result)=>{
+            if (result.length > 0 && result[0].passwordHash == passwordHash){
+                resolve(true);
+            } else {
+                resolve(false);
+            }
+        })
+    })
+}
+
+function authenticateToken(username, token){
+    return new Promise((resolve, reject)=>{
+        let query = `SELECT * FROM tokens WHERE username = "${username}";`
+        console.log(query)
+        con.query(query, (error, result)=>{
+            if (result.length > 0) {
+                let currentTime = new Date();
+                let expireTime = new Date(result[0].expires);
+                console.log(currentTime);
+                console.log(expireTime);
+                if (result[0].token == token && currentTime < expireTime) {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
+            } else {
+                resolve(false);
+            }
+        });
+    })
+}
 
 // ----------- Endpoints -----------
-
 
 app.post("/addUser", bodyParser, async (req, res) => {
     let username = req.body.username;
@@ -171,7 +235,6 @@ app.post("/addUser", bodyParser, async (req, res) => {
     let response = await attemptToAddNewUser(username, passwordHash);
     res.send(response);
 });
-
 
 app.post("/addNote", bodyParser, async(req, res)=>{
     let username = req.body.username;
@@ -202,7 +265,6 @@ app.post("/getNoteText", bodyParser, async(req, res)=>{
     res.send(response)
 })
 
-
 // Health Check: makes sure there are DBs available and sends 200, otherwise sends 500
 app.get("/health", bodyParser, async(req, res)=>{
     let result = await healthCheck();
@@ -212,6 +274,27 @@ app.get("/health", bodyParser, async(req, res)=>{
         res.status(500).send();
     }
 })
+
+app.post("/signIn", bodyParser, async(req, res)=>{
+    let username = req.body.username;
+    let passwordHash = req.body.passwordHash;
+
+    if (await loginIsCorrect(username, passwordHash)){
+        let token = await getNewTokenForUsername(username);
+        res.send(token);
+    } else {
+        res.send("Incorrect login");
+    }
+})
+
+app.post("/testAuth", bodyParser, async (req, res)=>{
+    let username = req.body.username;
+    let token = req.body.token;
+
+    res.send(await authenticateToken(username, token));
+
+})
+
 
 app.listen(8000);       
 // http.createServer(app).listen(8080, function(){

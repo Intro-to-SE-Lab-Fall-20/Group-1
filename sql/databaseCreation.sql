@@ -15,6 +15,14 @@ CREATE TABLE notes
     noteText varchar(5000),
     FOREIGN KEY (username) REFERENCES users (username)
 );
+CREATE TABLE tokens
+(
+    username varchar(25) UNIQUE,
+    token varchar(100),
+    expires DATETIME,
+    FOREIGN KEY (username) REFERENCES users (username)
+);
+
 
 CREATE USER 'testUser'@'%' IDENTIFIED
 WITH mysql_native_password BY 'newpassword';
