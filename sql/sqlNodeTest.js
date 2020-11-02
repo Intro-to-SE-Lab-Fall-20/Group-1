@@ -1,6 +1,7 @@
 var mysql = require('mysql');
 const https = require('https');
 const http = require('http');
+var cors = require("cors");
 var fs = require('fs');
 var express = require('express');
 const bodyParser = require('body-parser').json();
@@ -20,18 +21,18 @@ con.connect(function(err) {
 
 
 const app = express();
-
+app.use(cors());
 
 
 
 function attemptToAddNewUser(username, passwordHash){
     return new Promise(async (resolve,reject)=>{
-        let query = `SELECT * FROM users WHERE username = "${username}"`;
-
         if (await checkUserExits(username)){
             resolve("DUPLICATE");
         } else {
-            query = `INSERT INTO users (username, passwordHash) VALUES ("${username}", "${passwordHash}")`;
+            let query = `INSERT INTO users (username, passwordHash) VALUES (?, ?)`;
+            query = mysql.format(query,[username, passwordHash]);
+
             con.query(query, (error, result)=>{
                 resolve("ADDED");
             });
@@ -41,7 +42,9 @@ function attemptToAddNewUser(username, passwordHash){
 
 function getNotesForUser(username){
     return new Promise((resolve,reject)=>{
-        let query = `SELECT * FROM notes WHERE username = "${username}"`;
+        let query = `SELECT * FROM notes WHERE username = ?`;
+        query = mysql.format(query,[username]);
+
         con.query(query, (error, result)=>{
             resolve(result);
         })
@@ -50,7 +53,9 @@ function getNotesForUser(username){
 
 function checkUserExits(username){
     return new Promise((resolve,reject)=>{
-        let query = `SELECT username FROM users WHERE username = "${username}"`;
+        let query = `SELECT username FROM users WHERE username = ?`;
+        query = mysql.format(query,[username]);
+
         con.query(query, (error, result)=>{
             if (result.length > 0){
                 resolve(true)
@@ -76,7 +81,9 @@ function addNewNote(username, noteName, noteText){
             })
 
             if (noDuplicates){
-                let query = `INSERT INTO notes (noteName, username, noteText) VALUES ("${noteName}","${username}","${noteText}");`;
+                let query = `INSERT INTO notes (noteName, username, noteText) VALUES (?,?,?);`;
+                query = mysql.format(query,[noteName, username, noteText]);
+
                 con.query(query, (error, result)=>{
                     resolve("ADDED");   
                 })
@@ -103,10 +110,13 @@ function updateNote(username, noteName, noteText){
             if (!noteExists){
                 resolve("NOTE DOESN'T EXIST");
             } else {
-                let query = `UPDATE notes SET noteText = "${noteText}" WHERE username = "${username}" AND noteName = "${noteName}";`
+                let query = `UPDATE notes SET noteText = ? WHERE username = ? AND noteName = ?;`
+                query = mysql.format(query,[noteText, username, noteName]);
                 con.query(query, (error, result)=>{
+                    if (error) console.log(error)
                     resolve("UPDATED")            
                 })
+                con
             }    
         } else {
             resolve("USER NOT EXIST")
@@ -126,7 +136,9 @@ function healthCheck(){
 function getNoteNames(username){
     return new Promise (async (resolve, reject)=>{
         if (await checkUserExits(username)){
-            let query = `SELECT noteName FROM notes WHERE username = "${username}";`
+            let query = `SELECT noteName FROM notes WHERE username = ?;`
+            query = mysql.format(query,[username]);
+
             con.query(query, (error, result)=>{
                 if (result.length > 0){
                     let names = [];
@@ -147,7 +159,9 @@ function getNoteNames(username){
 function getNoteText(username, noteName){
     return new Promise (async (resolve, reject)=>{
         if (await checkUserExits(username)){
-            let query = `SELECT noteText FROM notes WHERE username = "${username}" AND noteName = "${noteName}";`
+            let query = `SELECT noteText FROM notes WHERE username = ? AND noteName = ?;`
+            query = mysql.format(query,[username, noteName]);
+
             con.query(query, (error, result)=>{
                 if (result.length > 0){
                     resolve(result[0].noteText);
@@ -183,18 +197,20 @@ function getNewTokenForUsername(username){
         date.setHours(date.getHours() + 1);
         date = date.toISOString().slice(0, 19).replace('T', ' ');
         
-        let query = `REPLACE INTO tokens (username, token, expires) values("${username}","${token}","${date}")`
+        let query = `REPLACE INTO tokens (username, token, expires) values(?,?,?)`
+        query = mysql.format(query,[username, token, date]);
+
         con.query(query, (error, result)=>{
+            if (error) console.log(error);
             resolve(token);
         });
-    })
-
-
-}
+    });
+};
 
 function loginIsCorrect(username, passwordHash){
     return new Promise((resolve, reject)=>{
-        let query = `SELECT * FROM users WHERE username = "${username}";`;
+        let query = `SELECT * FROM users WHERE username = ?;`;
+        query = mysql.format(query,[username]);
         con.query(query, (error, result)=>{
             if (result.length > 0 && result[0].passwordHash == passwordHash){
                 resolve(true);
@@ -207,25 +223,32 @@ function loginIsCorrect(username, passwordHash){
 
 function authenticateToken(username, token){
     return new Promise((resolve, reject)=>{
-        let query = `SELECT * FROM tokens WHERE username = "${username}";`
-        console.log(query)
-        con.query(query, (error, result)=>{
-            if (result.length > 0) {
-                let currentTime = new Date();
-                let expireTime = new Date(result[0].expires);
-                console.log(currentTime);
-                console.log(expireTime);
-                if (result[0].token == token && currentTime < expireTime) {
-                    resolve(true);
+        if (username == undefined || token == undefined){
+            resolve(false);
+        }else {
+            let query = `SELECT * FROM tokens WHERE username = ?;`
+            query = mysql.format(query,[username]);
+            console.log(query)
+            con.query(query, (error, result)=>{
+                if (result.length > 0) {
+                    let currentTime = new Date();
+                    
+                    // Have to add +0000 to convert to global time
+                    let expireTime = new Date(result[0].expires + " +0000");
+                    console.log(currentTime);
+                    console.log(expireTime);
+                    if (result[0].token == token && currentTime < expireTime) {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
                 } else {
                     resolve(false);
                 }
-            } else {
-                resolve(false);
-            }
-        });
-    })
-}
+            });
+        }
+    });
+};
 
 // ----------- Endpoints -----------
 
@@ -240,20 +263,44 @@ app.post("/addNote", bodyParser, async(req, res)=>{
     let username = req.body.username;
     let noteName = req.body.noteName;
     let noteText = req.body.noteText;
+    let token = req.body.token;
+
+    let isAuth = await authenticateToken(username, token);
+    if (!isAuth){
+        res.status(401).send("UNAUTHENTICATED");
+        return;
+    }
+
     let response = await addNewNote(username, noteName, noteText);
     res.send(response)
-})
+});
 
 app.post("/updateNote", bodyParser, async(req, res)=>{
     let username = req.body.username;
     let noteName = req.body.noteName;
     let noteText = req.body.noteText;
+    let token = req.body.token;
+
+    let isAuth = await authenticateToken(username, token);
+    if (!isAuth){
+        res.status(401).send("UNAUTHENTICATED");
+        return;
+    }
+
     let response = await updateNote(username, noteName, noteText);
     res.send(response)
 })
 
 app.post("/getNoteNames", bodyParser, async(req, res)=>{
     let username = req.body.username;
+    let token = req.body.token;
+
+    let isAuth = await authenticateToken(username, token);
+    if (!isAuth){
+        res.status(401).send("UNAUTHENTICATED");
+        return;
+    }
+
     let response = await getNoteNames(username);
     res.send(response)
 })
@@ -261,6 +308,14 @@ app.post("/getNoteNames", bodyParser, async(req, res)=>{
 app.post("/getNoteText", bodyParser, async(req, res)=>{
     let username = req.body.username;
     let noteName = req.body.noteName;
+    let token = req.body.token;
+
+    let isAuth = await authenticateToken(username, token);
+    if (!isAuth){
+        res.status(401).send("UNAUTHENTICATED");
+        return;
+    }
+
     let response = await getNoteText(username, noteName);
     res.send(response)
 })
@@ -287,16 +342,4 @@ app.post("/signIn", bodyParser, async(req, res)=>{
     }
 })
 
-app.post("/testAuth", bodyParser, async (req, res)=>{
-    let username = req.body.username;
-    let token = req.body.token;
-
-    res.send(await authenticateToken(username, token));
-
-})
-
-
-app.listen(8000);       
-// http.createServer(app).listen(8080, function(){
-//     console.log("Server is listening on port 8080...");
-// });
+app.listen(8000);
