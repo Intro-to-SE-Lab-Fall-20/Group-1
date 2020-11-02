@@ -15,7 +15,7 @@ import { Editor } from "@tinymce/tinymce-react";
 const axios = require('axios').default;
 
 // May need a handle request function or a class dedicated to making requests? Just need to handle an error/in-auth
-const serverURL = "http://localhost:8000";
+const serverURL = "http://3.133.110.55:8000";
 
 function NotesPage(props){
     const [noteNames, setNoteNames] = useState([]);

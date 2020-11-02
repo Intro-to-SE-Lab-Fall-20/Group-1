@@ -8,8 +8,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 ReactDOM.render(
     <React.StrictMode>
-        {/* <App /> */}
-        <NotesPage username="pbell" token="p3uiwnyjkurxvocji4tja4g0wqgn7ttdp2kttnrcy0qymveno82fg6n3uw2qfidc4za8mrqa1kax7pmrga61fkhnizzilfve4dso"/>
+        <App />
+        {/* <NotesPage username="pbell" token="qsto2iwsljl7fbpqfxf9me2cb2cst6fyrx1zilkk0xjdl8m6cg5i5urwycctuew3d0khq1rhwrqum87gpgc8inxk2pk9ughdyr2e"/> */}
     </React.StrictMode>,
     document.getElementById("root")
 );
