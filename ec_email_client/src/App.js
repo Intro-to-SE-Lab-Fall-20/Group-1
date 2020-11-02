@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import logo from "./logo.svg";
+import MasterLogin from "./pages/MasterLogin.js";
 import LoginPage from "./pages/LoginPage";
 import EmailComposition from "./pages/CreateEmail.js";
 import InboxPageComponent from './components/InboxPageComponent.js';
@@ -8,9 +9,17 @@ import "./App.css";
 // TODO: Have login functions passed as props so each page can check for sign ins and handle them
 
 function App() {
-    const [currentPage, setCurrentPage] = useState("Login");
+    const [currentPage, setCurrentPage] = useState("MasterLogin");
+    const [masterSignedIn, setMasterSignedIn] = useState(false);
     const [signedIn, setSignedIn] = useState(false);
     const [loadingGapi, setLoadingGapi] = useState(true);
+
+    function checkMasterSignIn(){
+        // Will check if user has signed into master (need to make API call to check)
+        if (true){
+            setMasterSignedIn(true);
+        }
+    }
 
     function checkIfSignedIn() {
         // Loads/signs in if not loaded
@@ -110,7 +119,10 @@ function App() {
     useEffect(() => {
         if (signedIn && currentPage == "Login") setCurrentPage("Inbox");
         if (signedIn) signOutButtonHandler();
-        if (!signedIn) {
+        if (!masterSignedIn){
+            setCurrentPage("MasterLogin");
+        }
+        else if (!signedIn) {
             document.getElementById("signout_button").style.display = "none";
             setCurrentPage("Login");
             // var authorizeButton = document.getElementById("authorize_button");
@@ -146,12 +158,29 @@ function App() {
         console.log("Just signed out");
     }
 
+    function handleMasterLogin(username, password){
+        // Will obviously change these functions after we can make real API calls and validate input 
+        if (username && password){
+            console.log("HIT MASTER LOGIN on APP.js");
+            setMasterSignedIn(true);
+            // After validation this 'setCurrentPage' will take user to the app selection page 
+            setCurrentPage("Inbox");
+        }
+        else if (username == 'admin' && password == 'password'){
+            setMasterSignedIn(true);
+        }
+        else{
+            console.log("HIT MASTER LOGIN on APP.js EMPTY ");
+        }
+    }
+
     return (
         <div className="App">
             <div className="Title">EC Email Client</div>
             <button id="signout_button">Sign Out</button>
             {currentPage == "Login" && !loadingGapi && <LoginPage />}
             {currentPage == "Inbox" && <InboxPageComponent />}
+            {currentPage == "MasterLogin" && <MasterLogin handleMasterLog={handleMasterLogin}/>}
             {!signedIn && loadingGapi && <Spinner color="primary" />}
         </div>
     );
