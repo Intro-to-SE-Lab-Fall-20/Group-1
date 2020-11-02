@@ -5,10 +5,11 @@ import EmailComposition from "./pages/CreateEmail.js";
 import InboxPageComponent from './components/InboxPageComponent.js';
 import { Spinner } from "reactstrap";
 import "./App.css";
+import AppSelection from "./pages/AppSelection";
 // TODO: Have login functions passed as props so each page can check for sign ins and handle them
 
 function App() {
-    const [currentPage, setCurrentPage] = useState("Login");
+    const [currentPage, setCurrentPage] = useState("AppSelection");
     const [signedIn, setSignedIn] = useState(false);
     const [loadingGapi, setLoadingGapi] = useState(true);
 
@@ -112,7 +113,7 @@ function App() {
         if (signedIn) signOutButtonHandler();
         if (!signedIn) {
             document.getElementById("signout_button").style.display = "none";
-            setCurrentPage("Login");
+            setCurrentPage("AppSelection");
             // var authorizeButton = document.getElementById("authorize_button");
             // authorizeButton.onclick = handleAuthClick;
         } else {
@@ -146,13 +147,51 @@ function App() {
         console.log("Just signed out");
     }
 
+    function handleAppSelection(appSelectionName) {
+        if (appSelectionName == "Email") {
+            setCurrentPage("Login");
+        }
+        if (appSelectionName == "Notes") {
+            // TODO: Add notes page here
+        }
+    }
+
+    function handleBackToAppSelect() {
+        if (currentPage == "Inbox") {
+            window.gapi.auth2.getAuthInstance().signOut();
+        }
+
+        setCurrentPage("AppSelection");
+    }
+
     return (
         <div className="App">
-            <div className="Title">EC Email Client</div>
+
+            {/* Display appropriate EC Banner depending on what page we are on */}
+            {(currentPage == "Login" || currentPage == "Inbox") && 
+            <div className="Title">EC Email Client</div>}
+            {currentPage == "AppSelection" && 
+            <div className="Title">EC Apps</div>}
+
+            {/* Render signout button */}
             <button id="signout_button">Sign Out</button>
+
+            {/* Render Login Page */}
             {currentPage == "Login" && !loadingGapi && <LoginPage />}
+
+            {/* Render Inbox Page */}
             {currentPage == "Inbox" && <InboxPageComponent />}
-            {!signedIn && loadingGapi && <Spinner color="primary" />}
+            
+            {/* Render App Selection Page */}
+            {currentPage == "AppSelection" && <AppSelection handleAppSelect={handleAppSelection}/>}
+            
+            {/* Only Display Spinner if not on AppSelectionPage */}
+            {currentPage != "AppSelection" && !signedIn && loadingGapi && <Spinner color="primary" />}
+            
+            {/* Add a "Back To App Selection" button if we are not on the App Selection Page or Inbox Page. (Inbox Page can use signout button) */}
+            {currentPage != "AppSelection" && currentPage != "Inbox" &&
+            <br/> &&
+            <button onClick={handleBackToAppSelect}>Back To App Selection</button>}
         </div>
     );
 }
