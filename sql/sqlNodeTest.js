@@ -228,15 +228,12 @@ function authenticateToken(username, token){
         }else {
             let query = `SELECT * FROM tokens WHERE username = ?;`
             query = mysql.format(query,[username]);
-            console.log(query)
             con.query(query, (error, result)=>{
                 if (result.length > 0) {
                     let currentTime = new Date();
                     
                     // Have to add +0000 to convert to global time
                     let expireTime = new Date(result[0].expires + " +0000");
-                    console.log(currentTime);
-                    console.log(expireTime);
                     if (result[0].token == token && currentTime < expireTime) {
                         resolve(true);
                     } else {
@@ -249,6 +246,102 @@ function authenticateToken(username, token){
         }
     });
 };
+
+// Handles too many login attempts. return of 'False' means too many attempts
+// Curretly only protects against login attempts on existing users
+function checkLoginAttempts(username, isFail){
+    return new Promise(async (resolve, reject)=>{
+
+        // If user doesn't exist, resolve true or else it would say too many login attemps
+        let userExists = await checkUserExits(username);
+        if (!userExists){
+            resolve(true);
+            return;
+        }
+
+        let query = "SELECT * FROM loginAttempts WHERE username = ?;"
+        query = mysql.format(query, [username]);
+        con.query(query, (error, result)=>{
+            // If first fail, add the attempt
+            if (error) console.log(error);
+            if (isFail && result.length == 0){
+                let time = new Date();
+                query = "INSERT INTO loginAttempts (username, attempts, lastTime) VALUES (?,?,?);"
+                query = mysql.format(query, [username, 1, time]);
+                con.query(query, (error, result)=>{
+                    if (error) console.log(error);
+                    resolve(true);
+                })
+            // If login is correct
+            } else if (!isFail){
+                // Check if they are within fail limit
+                if (result.length != 0){
+                    let expireTime = new Date(result[0].lastTime)
+                    expireTime = expireTime.setMinutes(expireTime.getMinutes() + 1);
+                    expireTime = new Date(expireTime);
+                    let currentTime = new Date();
+                    // Time hasn't expired and had 3+ attempts
+                    if (currentTime < expireTime && result[0].attempts >= 3){
+                        resolve(false);
+                    // Time hasnt expire but haven't had 3 failed attempts
+                    } else if (currentTime < expireTime && result[0].attempts < 3){
+                        query = "DELETE FROM loginAttempts WHERE username = ?;"
+                        query = mysql.format(query, [username]);
+                        con.query(query, (error, result)=>{
+                            resolve(true)
+                        });
+                    // The time is expired, delete record
+                    } else if (currentTime > expireTime){
+                        query = "DELETE FROM loginAttempts WHERE username = ?;"
+                        query = mysql.format(query, [username]);
+                        con.query(query, (error, result)=>{
+                            resolve(true)
+                        });
+                    }
+                } else {
+                    resolve(true);
+                }
+                // Else delete any existing record
+            } else if (isFail && result.length != 0){
+                let expireTime = new Date(result[0].lastTime)
+                expireTime = expireTime.setMinutes(expireTime.getMinutes() + 1);
+                expireTime = new Date(expireTime);
+                let currentTime = new Date();
+                
+                // Is expired - delete and TRUE
+                if (currentTime > expireTime){
+                    query = "DELETE FROM loginAttempts WHERE username = ?;"
+                    query = mysql.format(query, [username]);
+                    con.query(query, (error, result)=>{
+                        resolve(true)
+                    });
+                }
+                // Not expired and but less than 3 - increment and TRUE
+                if (currentTime < expireTime && result[0].attempts < 3){
+                    query = "UPDATE loginAttempts SET attempts = ? WHERE username = ? ;"
+                    query = mysql.format(query, [result[0].attempts +1, username]);
+                    con.query(query, (error, result)=>{
+                        if (error) console.log(error);
+                        resolve(true)
+                    });
+                }
+                // Not expired and is 3 - FALSE
+                if (currentTime < expireTime && result[0].attempts >= 3){
+                    resolve(false)
+                }
+            }
+        })
+    })
+
+
+
+    // Log time of first fail
+    // If failed 3 times in last 1 minute(s), return 'tooManyAttempts'
+    // If failed less than 3 times in last 1 minute and failed again, increment fail
+    // If success, delete record
+
+
+}
 
 // ----------- Endpoints -----------
 
@@ -334,12 +427,25 @@ app.post("/signIn", bodyParser, async(req, res)=>{
     let username = req.body.username;
     let passwordHash = req.body.passwordHash;
 
-    if (await loginIsCorrect(username, passwordHash)){
+    let correctLogin = await loginIsCorrect(username, passwordHash);
+    let notTooManyAttempts = await checkLoginAttempts(username, !correctLogin);
+
+    if (correctLogin && notTooManyAttempts){
         let token = await getNewTokenForUsername(username);
         res.send(token);
-    } else {
+    } else if (correctLogin && !notTooManyAttempts){
+        res.send("TOO MANY ATTEMPTS");
+    } else if (!correctLogin && notTooManyAttempts){
         res.send("Incorrect login");
+    } else if (!correctLogin && !notTooManyAttempts){
+        res.send("TOO MANY ATTEMPTS");
     }
+
+    // if (await loginIsCorrect(username, passwordHash)){
+    //     let token = await getNewTokenForUsername(username);
+    //     res.send(token);
+    // } else {
+    //     res.send("Incorrect login");
 })
 
 app.listen(8000);

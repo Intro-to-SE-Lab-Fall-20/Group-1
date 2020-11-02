@@ -23,6 +23,13 @@ CREATE TABLE tokens
     FOREIGN KEY (username) REFERENCES users (username)
 );
 
+CREATE TABLE loginAttempts
+(
+    username varchar(25) UNIQUE,
+    attempts INTEGER,
+    lastTime DATETIME,
+    FOREIGN KEY (username) REFERENCES users (username)
+);
 
 CREATE USER 'testUser'@'%' IDENTIFIED
 WITH mysql_native_password BY 'newpassword';

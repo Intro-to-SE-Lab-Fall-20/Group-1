@@ -60,7 +60,7 @@ function NotesPage(props){
             <button id="create_email" onClick={toggleCreateNoteModal}>
                 Compose Note
             </button>
-            <CreateNoteModal isOpen={createNoteModalIsOpen} toggle={toggleCreateNoteModal} username={props.username} token={props.token} handleNewNote={handleNewNote} setUnAuthenticated={setUnAuthenticated}/>
+            {createNoteModalIsOpen && <CreateNoteModal isOpen={createNoteModalIsOpen} toggle={toggleCreateNoteModal} username={props.username} token={props.token} handleNewNote={handleNewNote} setUnAuthenticated={setUnAuthenticated}/>}
             <div class="tableFixHead">
                 <Table id="InboxDisplay">
                     <thead>
@@ -80,7 +80,6 @@ function NotesPage(props){
         </>
     );
 }
-
 
 function NoteNameRow(props) {
     const [modalIsOpen, setModalIsOpen] = useState(false);
@@ -177,7 +176,6 @@ function CreateNoteModal(props){
     const [errorMsg, setErrorMsg] = useState("")
 
     function handleChange(event){
-        console.log(event.target.value)
         setNewNoteName(event.target.value);
     }
 
