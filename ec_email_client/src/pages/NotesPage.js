@@ -28,7 +28,15 @@ function NotesPage(props){
 
     useEffect(()=>{
         // TODO: THIS
-        console.log("IS UNAUTHENTICATED. DO SOMETHING...")
+        if (unAuthenticated){
+            console.log("IS UNAUTHENTICATED. DO SOMETHING...")
+            alert("User is unauthenticated or your login has expired\n\nYour page will be redirected to the login page");
+            setTimeout(()=>{
+                document.location.reload();
+            }, 1000) 
+
+        }
+
     }, [unAuthenticated])
 
     useEffect(()=>{
@@ -44,7 +52,7 @@ function NotesPage(props){
             username: props.username,
             token: props.token
         }
-        axios.post(serverURL + "/getNoteNames", data).then((result)=>{
+        axios.post(serverURL + "/getNoteNames", data, { validateStatus: false }).then((result, e)=>{
             if (result.data == "UNAUTHENTICATED"){
                 setUnAuthenticated(true);
                 return;
@@ -61,7 +69,7 @@ function NotesPage(props){
                 Compose Note
             </button>
             {createNoteModalIsOpen && <CreateNoteModal isOpen={createNoteModalIsOpen} toggle={toggleCreateNoteModal} username={props.username} token={props.token} handleNewNote={handleNewNote} setUnAuthenticated={setUnAuthenticated}/>}
-            <div class="tableFixHead">
+            <div class="tableFixHead" style={{width: "80%", left: "10%", position: "relative"}}>
                 <Table id="InboxDisplay">
                     <thead>
                         <tr>
@@ -95,7 +103,7 @@ function NoteNameRow(props) {
             token: props.token,
             noteName: props.noteName
         }
-        axios.post(serverURL + "/getNoteText", data).then((result)=>{
+        axios.post(serverURL + "/getNoteText", data, { validateStatus: false }).then((result)=>{
             if (result.data == "UNAUTHENTICATED"){
                 props.setUnAuthenticated(true);
                 return;
@@ -136,7 +144,7 @@ function EditNotePage(props){
 
     function saveNote(){
         let noteContent = document
-            .getElementsByTagName("iframe")[0].contentWindow.document.getElementById("tinymce").innerHTML;
+            .getElementsByTagName("iframe")[2].contentWindow.document.getElementById("tinymce").innerHTML;
         
         let data = {
             username: props.username,
@@ -145,7 +153,7 @@ function EditNotePage(props){
             noteText: noteContent
         }
 
-        axios.post(serverURL + "/updateNote", data).then((result)=>{
+        axios.post(serverURL + "/updateNote", data, { validateStatus: false }).then((result)=>{
             if (result.data == "UNAUTHENTICATED"){
                 props.setUnAuthenticated(true);
                 return;
@@ -186,7 +194,7 @@ function CreateNoteModal(props){
             noteName: newNoteName,
             noteText: ""
         }
-        axios.post(serverURL + "/addNote", data).then((result)=>{
+        axios.post(serverURL + "/addNote", data, { validateStatus: false }).then((result)=>{
             if (result.data == "UNAUTHENTICATED"){
                 props.setUnAuthenticated(true);
                 return;

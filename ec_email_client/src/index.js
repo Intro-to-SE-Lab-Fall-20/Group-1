@@ -9,7 +9,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 ReactDOM.render(
     <React.StrictMode>
         <App />
-        {/* <NotesPage username="pbell" token="qsto2iwsljl7fbpqfxf9me2cb2cst6fyrx1zilkk0xjdl8m6cg5i5urwycctuew3d0khq1rhwrqum87gpgc8inxk2pk9ughdyr2e"/> */}
     </React.StrictMode>,
     document.getElementById("root")
 );

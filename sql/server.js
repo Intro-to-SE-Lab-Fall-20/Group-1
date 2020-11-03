@@ -7,18 +7,21 @@ var express = require('express');
 const bodyParser = require('body-parser').json();
 const { connect } = require('http2');
 
-var con = mysql.createConnection({
-    host: "localhost",
-    user: "testUser",
-    password: "newpassword",
-    database: "ecEmail"
-});
+function getCon(){
+    var con = mysql.createConnection({
+        host: "localhost",
+        user: "testUser",
+        password: "newpassword",
+        database: "ecEmail"
+    });
+    
+    con.connect(function(err) {
+        if (err) throw err;
+        // console.log("Connected!");
+    });
 
-con.connect(function(err) {
-    if (err) throw err;
-    console.log("Connected!");
-});
-
+    return con
+}
 
 const app = express();
 app.use(cors());
@@ -32,7 +35,7 @@ function attemptToAddNewUser(username, passwordHash){
         } else {
             let query = `INSERT INTO users (username, passwordHash) VALUES (?, ?)`;
             query = mysql.format(query,[username, passwordHash]);
-
+            let con = getCon();
             con.query(query, (error, result)=>{
                 resolve("ADDED");
             });
@@ -44,7 +47,7 @@ function getNotesForUser(username){
     return new Promise((resolve,reject)=>{
         let query = `SELECT * FROM notes WHERE username = ?`;
         query = mysql.format(query,[username]);
-
+        let con = getCon();
         con.query(query, (error, result)=>{
             resolve(result);
         })
@@ -55,7 +58,7 @@ function checkUserExits(username){
     return new Promise((resolve,reject)=>{
         let query = `SELECT username FROM users WHERE username = ?`;
         query = mysql.format(query,[username]);
-
+        let con = getCon();
         con.query(query, (error, result)=>{
             if (result.length > 0){
                 resolve(true)
@@ -83,7 +86,7 @@ function addNewNote(username, noteName, noteText){
             if (noDuplicates){
                 let query = `INSERT INTO notes (noteName, username, noteText) VALUES (?,?,?);`;
                 query = mysql.format(query,[noteName, username, noteText]);
-
+                let con = getCon();
                 con.query(query, (error, result)=>{
                     resolve("ADDED");   
                 })
@@ -112,11 +115,11 @@ function updateNote(username, noteName, noteText){
             } else {
                 let query = `UPDATE notes SET noteText = ? WHERE username = ? AND noteName = ?;`
                 query = mysql.format(query,[noteText, username, noteName]);
+                let con = getCon();
                 con.query(query, (error, result)=>{
                     if (error) console.log(error)
                     resolve("UPDATED")            
                 })
-                con
             }    
         } else {
             resolve("USER NOT EXIST")
@@ -127,6 +130,7 @@ function updateNote(username, noteName, noteText){
 function healthCheck(){
     return new Promise((resolve, reject)=>{
         let query = "SHOW DATABASES;"
+        let con = getCon();
         con.query(query, (error, result)=>{
             resolve(result)            
         })
@@ -138,7 +142,7 @@ function getNoteNames(username){
         if (await checkUserExits(username)){
             let query = `SELECT noteName FROM notes WHERE username = ?;`
             query = mysql.format(query,[username]);
-
+            let con = getCon();
             con.query(query, (error, result)=>{
                 if (result.length > 0){
                     let names = [];
@@ -161,7 +165,7 @@ function getNoteText(username, noteName){
         if (await checkUserExits(username)){
             let query = `SELECT noteText FROM notes WHERE username = ? AND noteName = ?;`
             query = mysql.format(query,[username, noteName]);
-
+            let con = getCon();
             con.query(query, (error, result)=>{
                 if (result.length > 0){
                     resolve(result[0].noteText);
@@ -199,7 +203,7 @@ function getNewTokenForUsername(username){
         
         let query = `REPLACE INTO tokens (username, token, expires) values(?,?,?)`
         query = mysql.format(query,[username, token, date]);
-
+        let con = getCon();
         con.query(query, (error, result)=>{
             if (error) console.log(error);
             resolve(token);
@@ -211,7 +215,8 @@ function loginIsCorrect(username, passwordHash){
     return new Promise((resolve, reject)=>{
         let query = `SELECT * FROM users WHERE username = ?;`;
         query = mysql.format(query,[username]);
-        con.query(query, (error, result)=>{
+        let conn = getCon();
+        conn.query(query, (error, result)=>{
             if (result.length > 0 && result[0].passwordHash == passwordHash){
                 resolve(true);
             } else {
@@ -223,6 +228,7 @@ function loginIsCorrect(username, passwordHash){
 
 function authenticateToken(username, token){
     return new Promise((resolve, reject)=>{
+        let con = getCon();
         if (username == undefined || token == undefined){
             resolve(false);
         }else {
@@ -251,7 +257,7 @@ function authenticateToken(username, token){
 // Curretly only protects against login attempts on existing users
 function checkLoginAttempts(username, isFail){
     return new Promise(async (resolve, reject)=>{
-
+        let con = getCon();
         // If user doesn't exist, resolve true or else it would say too many login attemps
         let userExists = await checkUserExits(username);
         if (!userExists){
@@ -440,12 +446,6 @@ app.post("/signIn", bodyParser, async(req, res)=>{
     } else if (!correctLogin && !notTooManyAttempts){
         res.send("TOO MANY ATTEMPTS");
     }
-
-    // if (await loginIsCorrect(username, passwordHash)){
-    //     let token = await getNewTokenForUsername(username);
-    //     res.send(token);
-    // } else {
-    //     res.send("Incorrect login");
 })
 
 app.listen(8000);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import logo from "./logo.svg";
 import LoginPage from "./pages/LoginPage";
+import NotesPage from "./pages/NotesPage";
 import EmailComposition from "./pages/CreateEmail.js";
 import InboxPageComponent from './components/InboxPageComponent.js';
 import { Spinner } from "reactstrap";
@@ -152,7 +153,7 @@ function App() {
             setCurrentPage("Login");
         }
         if (appSelectionName == "Notes") {
-            // TODO: Add notes page here
+            setCurrentPage("Notes");
         }
     }
 
@@ -182,11 +183,14 @@ function App() {
             {/* Render Inbox Page */}
             {currentPage == "Inbox" && <InboxPageComponent />}
             
+            {/* Render Notes Page */}
+            {currentPage == "Notes" && <NotesPage username="pbell" token="2ecrlch7alfztudeijjolffutawde2id52e1fovpk95nxq1hied1ahb4grb51orraqshc8f6f8afqao5mupm70d6f62c6b27tt67"/>}
+
             {/* Render App Selection Page */}
             {currentPage == "AppSelection" && <AppSelection handleAppSelect={handleAppSelection}/>}
             
             {/* Only Display Spinner if not on AppSelectionPage */}
-            {currentPage != "AppSelection" && !signedIn && loadingGapi && <Spinner color="primary" />}
+            {currentPage != "AppSelection" && currentPage != "Notes" && !signedIn && loadingGapi && <Spinner color="primary" />}
             
             {/* Add a "Back To App Selection" button if we are not on the App Selection Page or Inbox Page. (Inbox Page can use signout button) */}
             {currentPage != "AppSelection" && currentPage != "Inbox" &&
