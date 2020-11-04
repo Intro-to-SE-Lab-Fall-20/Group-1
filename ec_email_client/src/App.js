@@ -8,19 +8,15 @@ import { Spinner } from "reactstrap";
 import "./App.css";
 import AppSelection from "./pages/AppSelection";
 // TODO: Have login functions passed as props so each page can check for sign ins and handle them
+const axios = require('axios').default;
+const serverURL = "http://3.133.110.55:8000";
 
 function App() {
     const [currentPage, setCurrentPage] = useState("MasterLogin");
     const [masterSignedIn, setMasterSignedIn] = useState(false);
+    var apiToken = 0;
     const [signedIn, setSignedIn] = useState(false);
     const [loadingGapi, setLoadingGapi] = useState(true);
-
-    function checkMasterSignIn(){
-        // Will check if user has signed into master (need to make API call to check)
-        if (true){
-            setMasterSignedIn(true);
-        }
-    }
 
     function checkIfSignedIn() {
         // Loads/signs in if not loaded
@@ -176,20 +172,39 @@ function App() {
         setCurrentPage("AppSelection");
     }
 
-    function handleMasterLogin(username, password){
-        // Will obviously change these functions after we can make real API calls and validate input 
-        if (username && password){
-            console.log("HIT MASTER LOGIN on APP.js");
-            setMasterSignedIn(true);
+    function handleMasterLogin( username, passwordHash ) {
+
+        let data = {
+            "username": username, 
+            "passwordHash": passwordHash 
+        }
+
+        axios.post(serverURL + "/signIn", data, { validateStatus: false }).then((result, e)=>{
+            console.log(result.data);
+            if (result.data == "Incorrect login"){
+                console.log(result.data);
+                alert('Incorrect Username/ Password Combination');
+            } 
+
+            else if (result.data == "TOO MANY ATTEMPTS"){
+                console.log(result.data);
+                alert('Too many Incorrect attempts for this account. It has been temporarily locked');
+            }
+
+            else if (result.data != ''){
+                setMasterSignedIn(true);
+                setCurrentPage("AppSelection");
+                apiToken = (result.data);
+            }
+
+
+        })
+
+
+            //setMasterSignedIn(true);
             // After validation this 'setCurrentPage' will take user to the app selection page 
-            setCurrentPage("Inbox");
-        }
-        else if (username == 'admin' && password == 'password'){
-            setMasterSignedIn(true);
-        }
-        else{
-            console.log("HIT MASTER LOGIN on APP.js EMPTY ");
-        }
+            //setCurrentPage("Inbox");
+
     }
 
     return (
@@ -217,7 +232,7 @@ function App() {
             {currentPage != "AppSelection" && !signedIn && loadingGapi && <Spinner color="primary" />}
             
             {/* Add a "Back To App Selection" button if we are not on the App Selection Page or Inbox Page. (Inbox Page can use signout button) */}
-            {currentPage != "AppSelection" && currentPage != "Inbox" &&
+            {currentPage != "AppSelection" && currentPage != "Inbox"  && currentPage != "MasterLogin" &&
             <br/> &&
             <button onClick={handleBackToAppSelect}>Back To App Selection</button>}
 
