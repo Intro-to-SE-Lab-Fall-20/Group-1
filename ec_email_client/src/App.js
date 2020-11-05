@@ -100,6 +100,14 @@ function App() {
         };
     }
 
+    // Assings signout button logout functionality
+    function MasterSignOutButtonHandler() {
+        console.log("Master Signing out via button");
+        apiToken = 0;
+        setMasterSignedIn(false);
+        setCurrentPage("MasterLogin");
+    }
+
     async function updateSigninStatus(isSignedIn) {
         console.log("Sign in status: " + isSignedIn);
         setSignedIn(isSignedIn);
@@ -173,7 +181,6 @@ function App() {
     }
 
     function handleMasterLogin( username, passwordHash ) {
-
         let data = {
             "username": username, 
             "passwordHash": passwordHash 
@@ -200,11 +207,6 @@ function App() {
 
         })
 
-
-            //setMasterSignedIn(true);
-            // After validation this 'setCurrentPage' will take user to the app selection page 
-            //setCurrentPage("Inbox");
-
     }
 
     return (
@@ -217,7 +219,13 @@ function App() {
             <div className="Title">EC Apps</div>}
 
             {/* Render signout button */}
-            <button id="signout_button">Sign Out</button>
+            {currentPage == "AppSelection" &&
+            <button onClick={MasterSignOutButtonHandler}>Master Sign Out</button>}
+
+            {/* Render signout button */}
+            {currentPage != "MasterLogin" && currentPage != "AppSelection" &&
+            <button id="signout_button">Sign Out</button>}
+
 
             {/* Render Login Page */}
             {currentPage == "Login" && !loadingGapi && <LoginPage />}
