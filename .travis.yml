@@ -3,4 +3,4 @@ node_js:
   - 12
 before_script:
   - cd ./ec_email_client; npm install;
-script: npm run test -- --watchAll=false
+script: npm run test App --watchAll=false
