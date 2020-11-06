@@ -15,7 +15,7 @@ const serverURL = "http://3.133.110.55:8000";
 function App() {
     const [currentPage, setCurrentPage] = useState("MasterLogin");
     const [masterSignedIn, setMasterSignedIn] = useState(false);
-    var apiToken = 0;
+    const [apiToken, setApiToken] = useState(0);
     const [signedIn, setSignedIn] = useState(false);
     const [loadingGapi, setLoadingGapi] = useState(true);
 
@@ -104,7 +104,7 @@ function App() {
     // Assings signout button logout functionality
     function MasterSignOutButtonHandler() {
         console.log("Master Signing out via button");
-        apiToken = 0;
+        setApiToken(0);
         setMasterSignedIn(false);
         setCurrentPage("MasterLogin");
     }
@@ -202,7 +202,7 @@ function App() {
             else if (result.data != ''){
                 setMasterSignedIn(true);
                 setCurrentPage("AppSelection");
-                apiToken = (result.data);
+                setApiToken(result.data);
             }
 
 
@@ -224,7 +224,7 @@ function App() {
             <button onClick={MasterSignOutButtonHandler}>Master Sign Out</button>}
 
             {/* Render signout button */}
-            {currentPage != "MasterLogin" && currentPage != "AppSelection" &&
+            {currentPage != "MasterLogin" && currentPage != "AppSelection" && currentPage != "Notes" &&
             <button id="signout_button">Sign Out</button>}
 
 
@@ -235,13 +235,13 @@ function App() {
             {currentPage == "Inbox" && <InboxPageComponent />}
             
             {/* Render Notes Page */}
-            {currentPage == "Notes" && <NotesPage username="pbell" token="2ecrlch7alfztudeijjolffutawde2id52e1fovpk95nxq1hied1ahb4grb51orraqshc8f6f8afqao5mupm70d6f62c6b27tt67"/>}
+            {currentPage == "Notes" && <NotesPage username="pbell" token={apiToken}/>}
 
             {/* Render App Selection Page */}
             {currentPage == "AppSelection" && <AppSelection handleAppSelect={handleAppSelection}/>}
             
             {/* Only Display Spinner if not on AppSelectionPage */}
-            {currentPage != "AppSelection" && currentPage != "Notes" && !signedIn && loadingGapi && <Spinner color="primary" />}
+            {currentPage != "AppSelection" && currentPage != "MasterLogin" && currentPage != "Notes" && !signedIn && loadingGapi && <Spinner color="primary" />}
             
             {/* Add a "Back To App Selection" button if we are not on the App Selection Page or Inbox Page. (Inbox Page can use signout button) */}
             {currentPage != "AppSelection" && currentPage != "Inbox"  && currentPage != "MasterLogin" &&
@@ -249,7 +249,7 @@ function App() {
             <button onClick={handleBackToAppSelect}>Back To App Selection</button>}
 
             {currentPage == "MasterLogin" && <MasterLogin handleMasterLog={handleMasterLogin}/>}
-            {!signedIn && loadingGapi && <Spinner color="primary" />}
+            {!signedIn && loadingGapi && currentPage != "MasterLogin" && <Spinner color="primary" />}
 
         </div>
     );
