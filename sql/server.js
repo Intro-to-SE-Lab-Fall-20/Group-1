@@ -38,6 +38,7 @@ function attemptToAddNewUser(username, passwordHash){
             let con = getCon();
             con.query(query, (error, result)=>{
                 resolve("ADDED");
+                con.destroy();
             });
         }
     })
@@ -50,6 +51,7 @@ function getNotesForUser(username){
         let con = getCon();
         con.query(query, (error, result)=>{
             resolve(result);
+            con.destroy();
         })
     })
 }
@@ -65,6 +67,7 @@ function checkUserExits(username){
             } else{
                 resolve(false)
             }
+            con.destroy();
         })
     })
 }
@@ -89,6 +92,7 @@ function addNewNote(username, noteName, noteText){
                 let con = getCon();
                 con.query(query, (error, result)=>{
                     resolve("ADDED");   
+                    con.destroy();
                 })
             }
         } else {
@@ -118,7 +122,8 @@ function updateNote(username, noteName, noteText){
                 let con = getCon();
                 con.query(query, (error, result)=>{
                     if (error) console.log(error)
-                    resolve("UPDATED")            
+                    resolve("UPDATED")   ;
+                    con.destroy();         
                 })
             }    
         } else {
@@ -132,7 +137,8 @@ function healthCheck(){
         let query = "SHOW DATABASES;"
         let con = getCon();
         con.query(query, (error, result)=>{
-            resolve(result)            
+            resolve(result) 
+            con.destroy();           
         })
     })
 }
@@ -153,6 +159,7 @@ function getNoteNames(username){
                 } else{
                     resolve([]);
                 }
+                con.destroy();
             })
         } else{
             resolve("USER NOT EXIST");
@@ -172,6 +179,7 @@ function getNoteText(username, noteName){
                 } else{
                     resolve("NOTE DOESN'T EXIST");
                 }
+                con.destroy();
             })
         } else{
             resolve("USER NOT EXIST");
@@ -207,6 +215,7 @@ function getNewTokenForUsername(username){
         con.query(query, (error, result)=>{
             if (error) console.log(error);
             resolve(token);
+            con.destroy();
         });
     });
 };
@@ -222,6 +231,7 @@ function loginIsCorrect(username, passwordHash){
             } else {
                 resolve(false);
             }
+            conn.destroy();
         })
     })
 }
@@ -237,7 +247,6 @@ function authenticateToken(username, token){
             con.query(query, (error, result)=>{
                 if (result.length > 0) {
                     let currentTime = new Date();
-                    
                     // Have to add +0000 to convert to global time
                     let expireTime = new Date(result[0].expires + " +0000");
                     if (result[0].token == token && currentTime < expireTime) {
@@ -248,6 +257,7 @@ function authenticateToken(username, token){
                 } else {
                     resolve(false);
                 }
+                con.destroy();
             });
         }
     });
@@ -277,6 +287,7 @@ function checkLoginAttempts(username, isFail){
                 con.query(query, (error, result)=>{
                     if (error) console.log(error);
                     resolve(true);
+                    con.destroy();
                 })
             // If login is correct
             } else if (!isFail){
@@ -295,6 +306,7 @@ function checkLoginAttempts(username, isFail){
                         query = mysql.format(query, [username]);
                         con.query(query, (error, result)=>{
                             resolve(true)
+                            con.destroy();
                         });
                     // The time is expired, delete record
                     } else if (currentTime > expireTime){
@@ -302,6 +314,7 @@ function checkLoginAttempts(username, isFail){
                         query = mysql.format(query, [username]);
                         con.query(query, (error, result)=>{
                             resolve(true)
+                            con.destroy();
                         });
                     }
                 } else {
@@ -320,6 +333,7 @@ function checkLoginAttempts(username, isFail){
                     query = mysql.format(query, [username]);
                     con.query(query, (error, result)=>{
                         resolve(true)
+                        con.destroy();
                     });
                 }
                 // Not expired and but less than 3 - increment and TRUE
@@ -329,6 +343,7 @@ function checkLoginAttempts(username, isFail){
                     con.query(query, (error, result)=>{
                         if (error) console.log(error);
                         resolve(true)
+                        con.destroy();
                     });
                 }
                 // Not expired and is 3 - FALSE

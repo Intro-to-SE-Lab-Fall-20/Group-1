@@ -215,7 +215,7 @@ function App() {
 
             {/* Display appropriate EC Banner depending on what page we are on */}
             {(currentPage == "Login" || currentPage == "Inbox" || currentPage == "MasterLogin") && 
-            <div className="Title">EC Email Client</div>}
+            <div className="Title">EC Client</div>}
             {currentPage == "AppSelection" && 
             <div className="Title">EC Apps</div>}
 
