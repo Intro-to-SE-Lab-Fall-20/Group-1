@@ -1,58 +1,32 @@
-import os
-
 from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+import time
 
-SELENIUM_WEBDRIVERS = {
-‘default’: {
-‘callable’: webdriver.Chrome,
-‘args’: (),
-‘kwargs’: {},
-},
-‘firefox’: {
-‘callable’: webdriver.Firefox,
-‘args’: (),
-‘kwargs’: {},
-},
-}
+# NOTE: Currently works with the Test Manager's setup
+# TODO: Adjust this to fine chromedriver.exe locally
+driver = webdriver.Chrome("C:/Users/DMent/Desktop/Group-1/Selenium/chromedriver.exe")
+driver.get("http://localhost:3000/")
 
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3"}}
+# Assert that "EC Email Client" is in the title
 
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-                "portal.context_processors.process_newsletter_form",
-            ]
-        },
-    }
-]
+assert "EC Email Client" in driver.title
+print("[SUCCESS] - Correct Title Detected")
 
-if os.environ.get("SELENIUM_HEADLESS", None):
-    from pyvirtualdisplay import Display
+time.sleep(2)
 
-    display = Display(visible=0, size=(1624, 1024))
-    display.start()
-    import atexit
+driver.find_element_by_xpath('//button[contains(text(), "EC > Gmail")]').click()
+print("[SUCCESS] - Correct EC Email Client Button Selector Detected")
 
-    atexit.register(lambda: display.stop())
+time.sleep(5)
 
-INSTALLED_APPS = ["portal"]
-PIPELINE_ENABLED = False
-ROOT_URLCONF = "example_project.example_project.urls"
-STATIC_ROOT = "example_project/example_project/static"
-SECRET_KEY = "bad_test_secret"
+# NOTE: In-depth EC Email Client Application Testing will not be included in this
+#       script because of Google's anti selenium security
+if driver.find_element_by_class_name('GoogleSigninButton'):
+    print("[SUCCESS] Google Sign In Button Detected")
+else:
+    print("[FAIL] Google Sign In Button Not Detected")
 
-DOTMAILER_URL = "https://test/"
-DOTMAILER_USER = "username_here"
-DOTMAILER_PASSWORD = "password_here"
-DOTMAILER_DEFAULT_PREFERENCES = [{"trout": True}]
+driver.find_element_by_xpath('//button[contains(text(), "Back To App Selection")]').click()
+print("[SUCCESS] Returned to App Selector From EC Email Client Login")
 
-from django_autoconfig.autoconfig import configure_settings
-
-configure_settings(globals())
+# TODO: Add further testing for new pages

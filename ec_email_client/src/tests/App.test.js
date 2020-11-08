@@ -6,7 +6,7 @@ import '@testing-library/jest-dom/extend-expect';
 //import { expect } from 'chai';
 import InboxPageComponent from '../components/InboxPageComponent.js';
 
-test('[APP] EC App Selector', () => {
+test('[APP] Main Page Successfully Renders', () => {
   const { getByText } = render(<App />); 
   const Title = getByText(/EC Apps/i);
   const ECEmailClientButton = getByText(/EC > Gmail/i);
