@@ -20,7 +20,7 @@ export default class AppSelection extends React.Component {
                         style={{ backgroundColor: '#333', borderColor: '#333', width: '250px' }}>
                             <CardTitle>EC Email Client</CardTitle>
                             <CardText>Access your emails here!</CardText>
-                            <Button onClick={() => this.handleOnClick("Email")}>EC {'>'} Gmail</Button>
+                            <Button onClick={() => this.handleOnClick("Email")}>EC > Gmail</Button>
                         </Card>
                     </Col>
                     <Col sm="6">
