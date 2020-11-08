@@ -16,9 +16,3 @@ test('[APP] EC App Selector', () => {
   expect(ECEmailClientButton).toBeInTheDocument();
   expect(ECNotepadButton).toBeInTheDocument();
 });
-
-test('[APP] EC Email Client Login Page', () => {
-  var test = render(<InboxPageComponent />);
-
-  console.log(test);
-})
