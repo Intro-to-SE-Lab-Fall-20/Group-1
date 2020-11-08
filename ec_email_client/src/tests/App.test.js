@@ -1,8 +1,12 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { queryByAttribute, queryByTestId, render } from '@testing-library/react';
 import App from '../App.js';
+import LoginPage from '../pages/LoginPage.js';
+import '@testing-library/jest-dom/extend-expect';
+//import { expect } from 'chai';
+import InboxPageComponent from '../components/InboxPageComponent.js';
 
-test('renders ec app selection page', () => {
+test('[APP] EC App Selector', () => {
   const { getByText } = render(<App />); 
   const Title = getByText(/EC Apps/i);
   const ECEmailClientButton = getByText(/EC > Gmail/i);
@@ -12,3 +16,9 @@ test('renders ec app selection page', () => {
   expect(ECEmailClientButton).toBeInTheDocument();
   expect(ECNotepadButton).toBeInTheDocument();
 });
+
+test('[APP] EC Email Client Login Page', () => {
+  var test = render(<InboxPageComponent />);
+
+  console.log(test);
+})

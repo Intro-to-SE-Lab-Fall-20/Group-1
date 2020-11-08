@@ -100,7 +100,7 @@ test('[ENDPOINT] Server AddNote', function() {
   return expect(signinEndpointResult).to.eventually.equal(401);
 })
 
-// Disabled until completion of server
+// Disabled until Sprint 5
 // test('[ENDPOINT] Server AddUser', function() {
 //   var signinEndpointResult = fetch('http://3.133.110.55:8000/addUser', {
 //     method: 'post',
