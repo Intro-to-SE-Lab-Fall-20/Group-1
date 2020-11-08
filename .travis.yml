@@ -1,15 +1,8 @@
-sudo: required
 notifications:
   email: false
 language: node_js
 node_js:
   - 12
 before_script:
-  - echo $PATH
-  - mkdir /home/travis/virtualenv/python2.7.12/bin
-  - wget http://chromedriver.storage.googleapis.com/2.24/chromedriver_linux64.zip
-  - unzip chromedriver_linux64.zip -d /home/travis/virtualenv/python2.7.12/bin/
-  - export CHROME_BIN=chromium-browser
-  - python automatedTesting.py
   - cd ./ec_email_client; npm install;
 script: npm run test -- --watchAll=false
