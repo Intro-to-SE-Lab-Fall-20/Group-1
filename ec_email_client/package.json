@@ -9,6 +9,7 @@
     "@tinymce/tinymce-react": "^3.7.0",
     "axios": "^0.21.0",
     "bootstrap": "^4.5.2",
+    "md5": "^2.3.0",
     "mimemessage": "^1.0.5",
     "password-hash": "^1.2.2",
     "react": "^16.13.1",
@@ -16,7 +17,8 @@
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.2.0",
     "react-scripts": "3.4.3",
-    "reactstrap": "^8.5.1"
+    "reactstrap": "^8.5.1",
+    "simple-react-modal": "^0.5.1"
   },
   "scripts": {
     "start": "react-scripts start",

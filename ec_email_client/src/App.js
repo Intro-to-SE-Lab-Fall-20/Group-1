@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import NotesPage from "./pages/NotesPage";
 import EmailComposition from "./pages/CreateEmail.js";
 import InboxPageComponent from './components/InboxPageComponent.js';
+import Modal from "./components/CreateAccountPopup.js"
 import { Spinner } from "reactstrap";
 import "./App.css";
 import AppSelection from "./pages/AppSelection";
@@ -207,8 +208,34 @@ function App() {
 
 
         })
-
     }
+
+    function handleAccountCreate( username, passwordHash ) {
+        let data = {
+            "username": username, 
+            "passwordHash": passwordHash 
+        }
+
+        axios.post(serverURL + "/addUser", data, { validateStatus: false }).then((result, e)=>{
+            console.log(result.data);
+            if (result.data == "ADDED"){
+                console.log(result.data);
+                alert('Account Successfully Created');
+            } 
+
+            else if (result.data == "TOO MANY ATTEMPTS"){
+                console.log(result.data);
+                alert('Too many Incorrect attempts for this account. It has been temporarily locked');
+            }
+
+            else if (result.data != ''){
+                alert('Account Successfully Created');
+            }
+
+
+        })
+    }
+
 
     return (
         <div className="App">
@@ -250,6 +277,8 @@ function App() {
 
             {currentPage == "MasterLogin" && <MasterLogin handleMasterLog={handleMasterLogin}/>}
             {!signedIn && loadingGapi && currentPage != "MasterLogin" && <Spinner color="primary" />}
+
+            {currentPage == "MasterLogin" && <Modal handleAccountCreate={handleAccountCreate}/>}
 
         </div>
     );
