@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import logo from "./logo.svg";
+import MasterLogin from "./pages/MasterLogin.js";
 import LoginPage from "./pages/LoginPage";
 import EmailComposition from "./pages/CreateEmail.js";
 import InboxPageComponent from './components/InboxPageComponent.js';
@@ -7,9 +8,13 @@ import { Spinner } from "reactstrap";
 import "./App.css";
 import AppSelection from "./pages/AppSelection";
 // TODO: Have login functions passed as props so each page can check for sign ins and handle them
+const axios = require('axios').default;
+const serverURL = "http://3.133.110.55:8000";
 
 function App() {
-    const [currentPage, setCurrentPage] = useState("AppSelection");
+    const [currentPage, setCurrentPage] = useState("MasterLogin");
+    const [masterSignedIn, setMasterSignedIn] = useState(false);
+    var apiToken = 0;
     const [signedIn, setSignedIn] = useState(false);
     const [loadingGapi, setLoadingGapi] = useState(true);
 
@@ -95,6 +100,14 @@ function App() {
         };
     }
 
+    // Assings signout button logout functionality
+    function MasterSignOutButtonHandler() {
+        console.log("Master Signing out via button");
+        apiToken = 0;
+        setMasterSignedIn(false);
+        setCurrentPage("MasterLogin");
+    }
+
     async function updateSigninStatus(isSignedIn) {
         console.log("Sign in status: " + isSignedIn);
         setSignedIn(isSignedIn);
@@ -111,7 +124,10 @@ function App() {
     useEffect(() => {
         if (signedIn && currentPage == "Login") setCurrentPage("Inbox");
         if (signedIn) signOutButtonHandler();
-        if (!signedIn) {
+        if (!masterSignedIn){
+            setCurrentPage("MasterLogin");
+        }
+        else if (!signedIn) {
             document.getElementById("signout_button").style.display = "none";
             setCurrentPage("AppSelection");
             // var authorizeButton = document.getElementById("authorize_button");
@@ -164,17 +180,52 @@ function App() {
         setCurrentPage("AppSelection");
     }
 
+    function handleMasterLogin( username, passwordHash ) {
+        let data = {
+            "username": username, 
+            "passwordHash": passwordHash 
+        }
+
+        axios.post(serverURL + "/signIn", data, { validateStatus: false }).then((result, e)=>{
+            console.log(result.data);
+            if (result.data == "Incorrect login"){
+                console.log(result.data);
+                alert('Incorrect Username/ Password Combination');
+            } 
+
+            else if (result.data == "TOO MANY ATTEMPTS"){
+                console.log(result.data);
+                alert('Too many Incorrect attempts for this account. It has been temporarily locked');
+            }
+
+            else if (result.data != ''){
+                setMasterSignedIn(true);
+                setCurrentPage("AppSelection");
+                apiToken = (result.data);
+            }
+
+
+        })
+
+    }
+
     return (
         <div className="App">
 
             {/* Display appropriate EC Banner depending on what page we are on */}
-            {(currentPage == "Login" || currentPage == "Inbox") && 
+            {(currentPage == "Login" || currentPage == "Inbox" || currentPage == "MasterLogin") && 
             <div className="Title">EC Email Client</div>}
             {currentPage == "AppSelection" && 
             <div className="Title">EC Apps</div>}
 
             {/* Render signout button */}
-            <button id="signout_button">Sign Out</button>
+            {currentPage == "AppSelection" &&
+            <button onClick={MasterSignOutButtonHandler}>Master Sign Out</button>}
+
+            {/* Render signout button */}
+            {currentPage != "MasterLogin" && currentPage != "AppSelection" &&
+            <button id="signout_button">Sign Out</button>}
+
 
             {/* Render Login Page */}
             {currentPage == "Login" && !loadingGapi && <LoginPage />}
@@ -189,9 +240,13 @@ function App() {
             {currentPage != "AppSelection" && !signedIn && loadingGapi && <Spinner color="primary" />}
             
             {/* Add a "Back To App Selection" button if we are not on the App Selection Page or Inbox Page. (Inbox Page can use signout button) */}
-            {currentPage != "AppSelection" && currentPage != "Inbox" &&
+            {currentPage != "AppSelection" && currentPage != "Inbox"  && currentPage != "MasterLogin" &&
             <br/> &&
             <button onClick={handleBackToAppSelect}>Back To App Selection</button>}
+
+            {currentPage == "MasterLogin" && <MasterLogin handleMasterLog={handleMasterLogin}/>}
+            {!signedIn && loadingGapi && <Spinner color="primary" />}
+
         </div>
     );
 }
