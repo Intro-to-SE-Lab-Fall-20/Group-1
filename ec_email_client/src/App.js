@@ -17,6 +17,7 @@ function App() {
     const [currentPage, setCurrentPage] = useState("MasterLogin");
     const [masterSignedIn, setMasterSignedIn] = useState(false);
     const [apiToken, setApiToken] = useState(0);
+    const [username, setUsername] = useState("");
     const [signedIn, setSignedIn] = useState(false);
     const [loadingGapi, setLoadingGapi] = useState(true);
 
@@ -204,6 +205,7 @@ function App() {
                 setMasterSignedIn(true);
                 setCurrentPage("AppSelection");
                 setApiToken(result.data);
+                setUsername(username);
             }
 
 
@@ -223,9 +225,9 @@ function App() {
                 alert('Account Successfully Created');
             } 
 
-            else if (result.data == "TOO MANY ATTEMPTS"){
+            else if (result.data == "DUPLICATE"){
                 console.log(result.data);
-                alert('Too many Incorrect attempts for this account. It has been temporarily locked');
+                alert('Username already exists');
             }
 
             else if (result.data != ''){
@@ -262,7 +264,7 @@ function App() {
             {currentPage == "Inbox" && <InboxPageComponent />}
             
             {/* Render Notes Page */}
-            {currentPage == "Notes" && <NotesPage username="pbell" token={apiToken}/>}
+            {currentPage == "Notes" && <NotesPage username={username} token={apiToken}/>}
 
             {/* Render App Selection Page */}
             {currentPage == "AppSelection" && <AppSelection handleAppSelect={handleAppSelection}/>}
