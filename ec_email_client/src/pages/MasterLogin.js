@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Button, FormGroup, FormControl } from "react-bootstrap";
 import "./MasterLogin.css";
-var passwordHash = require('password-hash');
+import Modal from "../components/CreateAccountPopup.js"
+var md5 = require('md5');
 
 export default class MasterLogin extends React.Component{
     constructor(props) {
@@ -25,11 +26,11 @@ export default class MasterLogin extends React.Component{
     handleSubmit(event) {
         event.preventDefault();
         const { handleMasterLog } = this.props;
-        var hashedPassword = passwordHash.generate(this.state.password);
+        var hashedPassword = md5(this.state.password);
         // TODO Change 'this.state.password' to hashedPassword
         // Currently keeping it as password so group members can test with 'pbell' login. 
         // After we have create account loading hashed password in the DB we can change this to send the hashed password to the login function
-        handleMasterLog(this.state.username, this.state.password);
+        handleMasterLog(this.state.username, hashedPassword);
 
     }
    
@@ -66,7 +67,6 @@ export default class MasterLogin extends React.Component{
                         </Button>
                         <br />
                         {/* Create account link will go here */ }
-                        <p>Create Account</p>
                     </form>
                     
                 </div>
