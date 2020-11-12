@@ -62,7 +62,7 @@ export default class MasterLogin extends React.Component{
                                 />
                         </div>
 
-                        <Button block bsSize="large" type="submit">
+                        <Button block bssize="large" type="submit">
                             Login
                         </Button>
                         <br />
